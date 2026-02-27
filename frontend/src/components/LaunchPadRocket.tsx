@@ -7,7 +7,11 @@ import {
   Quaternion,
 } from 'cesium';
 import { Entity } from 'resium';
-import type { LaunchSummary, LaunchTrajectory } from '../../../shared/types';
+import type {
+  LaunchSummary,
+  LaunchTrajectory,
+  TrajectoryPoint,
+} from '../../../shared/types';
 import {
   getGenericRocketModelRoute,
   resolveRocketModelRoute,
@@ -17,6 +21,7 @@ import {
 interface LaunchPadRocketProps {
   selectedLaunch: LaunchSummary | null;
   trajectory: LaunchTrajectory | null;
+  activePoint: TrajectoryPoint | null;
 }
 
 const METERS_PER_LAT_DEGREE = 111_320;
@@ -70,7 +75,11 @@ async function canLoadModel(route: RocketModelRoute, cache: Map<string, boolean>
   }
 }
 
-export function LaunchPadRocket({ selectedLaunch, trajectory }: LaunchPadRocketProps) {
+export function LaunchPadRocket({
+  selectedLaunch,
+  trajectory,
+  activePoint,
+}: LaunchPadRocketProps) {
   const modelHealthCacheRef = useRef<Map<string, boolean>>(new Map());
   const [activeRoute, setActiveRoute] = useState<RocketModelRoute | null>(null);
   const [renderMarkerOnly, setRenderMarkerOnly] = useState(false);
@@ -134,6 +143,7 @@ export function LaunchPadRocket({ selectedLaunch, trajectory }: LaunchPadRocketP
       return null;
     }
 
+    const inFlight = Boolean(activePoint);
     const heading = headingFromTrajectory(trajectory);
     const orientation = Quaternion.fromHeadingPitchRoll(new HeadingPitchRoll(heading, 0, 0));
 
@@ -142,18 +152,27 @@ export function LaunchPadRocket({ selectedLaunch, trajectory }: LaunchPadRocketP
     const noseLength = 12;
     const towerHeight = poseRoute.towerHeightMeters;
     const towerOffset = toDegreesOffset(selectedLaunch.padLatitude, 0, poseRoute.towerOffsetEastMeters);
+    const rocketLongitude = activePoint?.longitude ?? selectedLaunch.padLongitude;
+    const rocketLatitude = activePoint?.latitude ?? selectedLaunch.padLatitude;
+    const rocketAltitude = Math.max(activePoint?.altitude ?? 0, 6) + (inFlight ? 45 : 0.8);
 
     return {
+      inFlight,
       orientation,
       bodyPosition: Cartesian3.fromDegrees(
-        selectedLaunch.padLongitude,
-        selectedLaunch.padLatitude,
-        bodyLength / 2,
+        rocketLongitude,
+        rocketLatitude,
+        rocketAltitude + bodyLength / 2,
       ),
       nosePosition: Cartesian3.fromDegrees(
-        selectedLaunch.padLongitude,
-        selectedLaunch.padLatitude,
-        bodyLength + noseLength / 2,
+        rocketLongitude,
+        rocketLatitude,
+        rocketAltitude + bodyLength + noseLength / 2,
+      ),
+      rocketPosition: Cartesian3.fromDegrees(
+        rocketLongitude,
+        rocketLatitude,
+        rocketAltitude,
       ),
       towerPosition: Cartesian3.fromDegrees(
         selectedLaunch.padLongitude + towerOffset.longitudeDelta,
@@ -170,7 +189,13 @@ export function LaunchPadRocket({ selectedLaunch, trajectory }: LaunchPadRocketP
       noseLength,
       towerHeight,
     };
-  }, [poseRoute.towerHeightMeters, poseRoute.towerOffsetEastMeters, selectedLaunch, trajectory]);
+  }, [
+    activePoint,
+    poseRoute.towerHeightMeters,
+    poseRoute.towerOffsetEastMeters,
+    selectedLaunch,
+    trajectory,
+  ]);
 
   if (!selectedLaunch || !rocketPose) {
     return null;
@@ -178,28 +203,32 @@ export function LaunchPadRocket({ selectedLaunch, trajectory }: LaunchPadRocketP
 
   return (
     <>
-      <Entity
-        id={`launch-pad-${selectedLaunch.id}`}
-        position={rocketPose.padPosition}
-        orientation={rocketPose.orientation}
-        ellipsoid={{
-          radii: new Cartesian3(8.5, 8.5, 0.8),
-          material: Color.fromCssColorString('#37485f').withAlpha(0.9),
-          outline: true,
-          outlineColor: Color.fromCssColorString('#89b4dd').withAlpha(0.7),
-        }}
-      />
-      <Entity
-        id={`launch-tower-${selectedLaunch.id}`}
-        position={rocketPose.towerPosition}
-        orientation={rocketPose.orientation}
-        box={{
-          dimensions: new Cartesian3(5.5, 5.5, rocketPose.towerHeight),
-          material: Color.fromCssColorString('#30455c').withAlpha(0.92),
-          outline: true,
-          outlineColor: Color.fromCssColorString('#6b92b6').withAlpha(0.75),
-        }}
-      />
+      {!rocketPose.inFlight ? (
+        <>
+          <Entity
+            id={`launch-pad-${selectedLaunch.id}`}
+            position={rocketPose.padPosition}
+            orientation={rocketPose.orientation}
+            ellipsoid={{
+              radii: new Cartesian3(8.5, 8.5, 0.8),
+              material: Color.fromCssColorString('#37485f').withAlpha(0.9),
+              outline: true,
+              outlineColor: Color.fromCssColorString('#89b4dd').withAlpha(0.7),
+            }}
+          />
+          <Entity
+            id={`launch-tower-${selectedLaunch.id}`}
+            position={rocketPose.towerPosition}
+            orientation={rocketPose.orientation}
+            box={{
+              dimensions: new Cartesian3(5.5, 5.5, rocketPose.towerHeight),
+              material: Color.fromCssColorString('#30455c').withAlpha(0.92),
+              outline: true,
+              outlineColor: Color.fromCssColorString('#6b92b6').withAlpha(0.75),
+            }}
+          />
+        </>
+      ) : null}
       {renderMarkerOnly || !activeRoute ? (
         <>
           <Entity
@@ -228,7 +257,7 @@ export function LaunchPadRocket({ selectedLaunch, trajectory }: LaunchPadRocketP
       ) : (
         <Entity
           id={`launch-rocket-model-${selectedLaunch.id}-${activeRoute.key}`}
-          position={rocketPose.padPosition}
+          position={rocketPose.rocketPosition}
           orientation={rocketPose.orientation}
           model={{
             uri: activeRoute.uri,

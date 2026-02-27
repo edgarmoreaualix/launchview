@@ -41,7 +41,7 @@
         "metallicFactor": 0.2,
         "roughnessFactor": 0.7
       },
-      "doubleSided": false
+      "doubleSided": true
     }
   ],
   "accessors": [

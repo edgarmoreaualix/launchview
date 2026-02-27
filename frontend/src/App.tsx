@@ -64,6 +64,11 @@ function App() {
   const launchesStatus = getLaunchesStatusMessage(isLoading, error, data.length);
 
   useEffect(() => {
+    if (!selectedLaunchId && data.length > 0) {
+      setSelectedLaunchId(data[0].id);
+      return;
+    }
+
     if (!selectedLaunchId) {
       return;
     }

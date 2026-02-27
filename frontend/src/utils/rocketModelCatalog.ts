@@ -95,19 +95,19 @@ export function getGenericRocketModelRoute(): RocketModelRoute {
 export function resolveRocketModelRoute(
   launch: Pick<LaunchSummary, 'rocketName' | 'rocketFamily'>,
 ): RocketModelResolution {
-  const byName = findRoute(launch.rocketName);
-  if (byName) {
+  const byRocketName = findRoute(launch.rocketName);
+  if (byRocketName) {
     return {
-      primary: byName,
+      primary: byRocketName,
       fallback: GENERIC_ROUTE,
       matchSource: 'rocketName',
     };
   }
 
-  const byFamily = findRoute(launch.rocketFamily);
-  if (byFamily) {
+  const byRocketFamily = findRoute(launch.rocketFamily);
+  if (byRocketFamily) {
     return {
-      primary: byFamily,
+      primary: byRocketFamily,
       fallback: GENERIC_ROUTE,
       matchSource: 'rocketFamily',
     };

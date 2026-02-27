@@ -187,7 +187,11 @@ export function Globe({
           activePoint={trajectoryPoint}
           elapsedSeconds={trajectoryElapsedSeconds}
         />
-        <LaunchPadRocket selectedLaunch={selectedLaunch} trajectory={trajectory} />
+        <LaunchPadRocket
+          selectedLaunch={selectedLaunch}
+          trajectory={trajectory}
+          activePoint={trajectoryPoint}
+        />
       </Viewer>
     </div>
   );
