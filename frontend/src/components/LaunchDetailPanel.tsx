@@ -6,6 +6,7 @@ interface LaunchDetailPanelProps {
   selectedLaunch: LaunchSummary | null;
   isLoading: boolean;
   error: string | null;
+  isEmpty: boolean;
   watchingCount: number | null;
   watchingLoading: boolean;
   watchingError: string | null;
@@ -30,6 +31,7 @@ export function LaunchDetailPanel({
   selectedLaunch,
   isLoading,
   error,
+  isEmpty,
   watchingCount,
   watchingLoading,
   watchingError,
@@ -50,6 +52,17 @@ export function LaunchDetailPanel({
       <section className="detail-panel" aria-live="polite">
         <h2 className="detail-title">Launch details</h2>
         <p className="detail-copy detail-error">Unable to load launches: {error}</p>
+      </section>
+    );
+  }
+
+  if (isEmpty) {
+    return (
+      <section className="detail-panel" aria-live="polite">
+        <h2 className="detail-title">Launch details</h2>
+        <p className="detail-copy">
+          No launch entries are available yet. Check back later for newly scheduled missions.
+        </p>
       </section>
     );
   }

@@ -9,20 +9,20 @@ function getLaunchesStatusMessage(
   isLoading: boolean,
   error: string | null,
   launchesCount: number,
-): { text: string; isError: boolean } {
+): { text: string; tone: 'loading' | 'error' | 'empty' | 'ready' } {
   if (isLoading) {
-    return { text: 'Loading launches...', isError: false };
+    return { text: 'Loading live launch feed...', tone: 'loading' };
   }
 
   if (error) {
-    return { text: `Failed to load launch data. ${error}`, isError: true };
+    return { text: `Launch API unavailable. ${error}`, tone: 'error' };
   }
 
   if (launchesCount === 0) {
-    return { text: 'No launches found.', isError: false };
+    return { text: 'No upcoming launches are available right now.', tone: 'empty' };
   }
 
-  return { text: `Loaded ${launchesCount} launches.`, isError: false };
+  return { text: `Tracking ${launchesCount} upcoming launches.`, tone: 'ready' };
 }
 
 function getTrajectoryStatusMessage(status: 'idle' | 'invalid' | 'ready'): string {
@@ -86,10 +86,10 @@ function App() {
       />
       <section className="status-panel" aria-live="polite">
         <h1 className="status-title">Launchview</h1>
-        <p className={`status-copy${launchesStatus.isError ? ' status-error' : ''}`}>
+        <p className={`status-copy status-${launchesStatus.tone}`}>
           {launchesStatus.text}
         </p>
-        {!isLoading && !error ? (
+        {!isLoading && !error && data.length > 0 ? (
           <p className="trajectory-status">{getTrajectoryStatusMessage(trajectoryStatus)}</p>
         ) : null}
       </section>
@@ -97,6 +97,7 @@ function App() {
         selectedLaunch={selectedLaunch}
         isLoading={isLoading}
         error={error}
+        isEmpty={!isLoading && !error && data.length === 0}
         watchingCount={watchingCount}
         watchingLoading={watchingLoading}
         watchingError={watchingError}
