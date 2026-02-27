@@ -77,7 +77,7 @@ export function LaunchPadRocket({ selectedLaunch, trajectory }: LaunchPadRocketP
 
   const modelResolution = useMemo(
     () => (selectedLaunch ? resolveRocketModelRoute(selectedLaunch) : null),
-    [selectedLaunch],
+    [selectedLaunch?.rocketFamily, selectedLaunch?.rocketName],
   );
 
   useEffect(() => {
@@ -125,7 +125,7 @@ export function LaunchPadRocket({ selectedLaunch, trajectory }: LaunchPadRocketP
     return () => {
       isCancelled = true;
     };
-  }, [modelResolution, selectedLaunch]);
+  }, [modelResolution, selectedLaunch?.id]);
 
   const poseRoute = activeRoute ?? modelResolution?.primary ?? getGenericRocketModelRoute();
 
