@@ -1,4 +1,5 @@
 import type { LaunchSummary } from '../../../shared/types';
+import { hasValidCoordinates } from './coordinates';
 
 export interface LaunchPinStyle {
   colorCss: string;
@@ -63,17 +64,6 @@ const STATUS_STYLE_MAP: Record<string, LaunchPinStyle> = {
   },
 };
 
-function isValidCoordinate(latitude: number, longitude: number): boolean {
-  return (
-    Number.isFinite(latitude) &&
-    Number.isFinite(longitude) &&
-    latitude >= -90 &&
-    latitude <= 90 &&
-    longitude >= -180 &&
-    longitude <= 180
-  );
-}
-
 function getPinStyle(statusAbbrev: string): LaunchPinStyle {
   const key = statusAbbrev.trim().toUpperCase();
   return STATUS_STYLE_MAP[key] ?? DEFAULT_PIN_STYLE;
@@ -81,7 +71,7 @@ function getPinStyle(statusAbbrev: string): LaunchPinStyle {
 
 export function toLaunchPins(launches: LaunchSummary[]): LaunchPin[] {
   return launches
-    .filter((launch) => isValidCoordinate(launch.padLatitude, launch.padLongitude))
+    .filter((launch) => hasValidCoordinates(launch.padLatitude, launch.padLongitude))
     .map((launch) => ({
       launchId: launch.id,
       name: launch.name,

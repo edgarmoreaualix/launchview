@@ -3,25 +3,20 @@ import type {
   LaunchTrajectory,
   TrajectoryPoint,
 } from '../../../shared/types';
-
-const MIN_LATITUDE = -90;
-const MAX_LATITUDE = 90;
-const MIN_LONGITUDE = -180;
-const MAX_LONGITUDE = 180;
+import {
+  hasValidCoordinates,
+  MAX_LATITUDE,
+  MAX_LONGITUDE,
+  MIN_LATITUDE,
+  MIN_LONGITUDE,
+} from './coordinates';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
 export function hasValidLaunchCoordinates(launch: LaunchSummary): boolean {
-  return (
-    Number.isFinite(launch.padLatitude) &&
-    Number.isFinite(launch.padLongitude) &&
-    launch.padLatitude >= MIN_LATITUDE &&
-    launch.padLatitude <= MAX_LATITUDE &&
-    launch.padLongitude >= MIN_LONGITUDE &&
-    launch.padLongitude <= MAX_LONGITUDE
-  );
+  return hasValidCoordinates(launch.padLatitude, launch.padLongitude);
 }
 
 export function createSyntheticTrajectory(
