@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Globe } from './components/Globe';
+import { LaunchDetailPanel } from './components/LaunchDetailPanel';
 import { useLaunches } from './hooks/useLaunches';
 
 function App() {
@@ -49,17 +50,11 @@ function App() {
           <p className="status-copy">Loaded {data.length} launches.</p>
         ) : null}
       </section>
-      {selectedLaunch ? (
-        <section className="selected-launch-panel" aria-live="polite">
-          <h2 className="selected-launch-title">{selectedLaunch.name}</h2>
-          <p className="selected-launch-copy">
-            {selectedLaunch.statusName} ({selectedLaunch.statusAbbrev})
-          </p>
-          <p className="selected-launch-copy">
-            {selectedLaunch.padName}, {selectedLaunch.locationName}
-          </p>
-        </section>
-      ) : null}
+      <LaunchDetailPanel
+        selectedLaunch={selectedLaunch}
+        isLoading={isLoading}
+        error={error}
+      />
     </main>
   );
 }
