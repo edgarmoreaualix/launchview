@@ -1,0 +1,11 @@
+{
+  "name": "launchview",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --setupFiles tests/setup.ts"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}
