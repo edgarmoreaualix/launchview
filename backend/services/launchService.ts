@@ -8,11 +8,26 @@ import { TTLCache } from "../utils/cache";
 
 const LL2_URL = "https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=20";
 const DEFAULT_TTL_MS = 60_000;
+const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const MOCK_FILE_PATH = path.resolve(CURRENT_DIR, "../../data/mock-launches.json");
 
 const launchesCache = new TTLCache<LaunchSummary[]>(DEFAULT_TTL_MS);
 
 interface LL2Response {
   results: LL2Launch[];
+}
+
+function parseLL2Response(payload: unknown): LL2Response {
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !("results" in payload) ||
+    !Array.isArray((payload as { results: unknown }).results)
+  ) {
+    throw new Error("Invalid LL2 payload: expected results array");
+  }
+
+  return payload as LL2Response;
 }
 
 function shouldUseMockData(): boolean {
@@ -64,10 +79,8 @@ function toLaunchSummary(launch: LL2Launch): LaunchSummary {
 }
 
 async function readMockLaunches(): Promise<LL2Launch[]> {
-  const currentDir = path.dirname(fileURLToPath(import.meta.url));
-  const mockFilePath = path.resolve(currentDir, "../../data/mock-launches.json");
-  const raw = await readFile(mockFilePath, "utf8");
-  const parsed = JSON.parse(raw) as LL2Response;
+  const raw = await readFile(MOCK_FILE_PATH, "utf8");
+  const parsed = parseLL2Response(JSON.parse(raw));
   return parsed.results;
 }
 
@@ -78,7 +91,7 @@ async function fetchLL2Launches(): Promise<LL2Launch[]> {
     throw new Error(`LL2 request failed with status ${response.status}`);
   }
 
-  const payload = (await response.json()) as LL2Response;
+  const payload = parseLL2Response(await response.json());
   return payload.results;
 }
 
