@@ -1,0 +1,17 @@
+{
+  "loop": 4,
+  "loop_padded": "004",
+  "status": "planned",
+  "workers": [
+    "worker-backend",
+    "worker-frontend",
+    "worker-qa",
+    "worker-sentinel"
+  ],
+  "artifacts": {
+    "prompts_generated": false,
+    "summaries_ready": false,
+    "merge_plan_ready": false,
+    "merged": false
+  }
+}
