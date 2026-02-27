@@ -12,7 +12,7 @@ export class TTLCache<T> {
       return null;
     }
 
-    if (Date.now() >= this.expiresAt) {
+    if (this.isExpired()) {
       this.clear();
       return null;
     }
@@ -28,5 +28,9 @@ export class TTLCache<T> {
   clear(): void {
     this.value = null;
     this.expiresAt = 0;
+  }
+
+  private isExpired(): boolean {
+    return Date.now() >= this.expiresAt;
   }
 }
