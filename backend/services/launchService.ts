@@ -1,17 +1,22 @@
 import fetch from "node-fetch";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import type { LL2Launch, LaunchSummary } from "../../shared/types";
 import { TTLCache } from "../utils/cache";
 
 const LL2_URL = "https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=20";
 const DEFAULT_TTL_MS = 60_000;
-const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const MOCK_FILE_PATH = path.resolve(CURRENT_DIR, "../../data/mock-launches.json");
+const MOCK_FILE_PATH = path.resolve(process.cwd(), "data/mock-launches.json");
 
-const launchesCache = new TTLCache<LaunchSummary[]>(DEFAULT_TTL_MS);
+export type LaunchDataSource = "ll2" | "mock";
+
+export interface LaunchesResult {
+  launches: LaunchSummary[];
+  source: LaunchDataSource;
+}
+
+const launchesCache = new TTLCache<LaunchesResult>(DEFAULT_TTL_MS);
 
 interface LL2Response {
   results: LL2Launch[];
@@ -95,7 +100,7 @@ async function fetchLL2Launches(): Promise<LL2Launch[]> {
   return payload.results;
 }
 
-export async function getLaunches(forceRefresh = false): Promise<LaunchSummary[]> {
+export async function getLaunches(forceRefresh = false): Promise<LaunchesResult> {
   if (!forceRefresh) {
     const cached = launchesCache.get();
     if (cached) {
@@ -104,20 +109,27 @@ export async function getLaunches(forceRefresh = false): Promise<LaunchSummary[]
   }
 
   let launches: LL2Launch[];
+  let source: LaunchDataSource;
 
   if (shouldUseMockData()) {
     launches = await readMockLaunches();
+    source = "mock";
   } else {
     try {
       launches = await fetchLL2Launches();
+      source = "ll2";
     } catch {
       launches = await readMockLaunches();
+      source = "mock";
     }
   }
 
-  const summaries = launches.map(toLaunchSummary);
-  launchesCache.set(summaries);
-  return summaries;
+  const result: LaunchesResult = {
+    launches: launches.map(toLaunchSummary),
+    source,
+  };
+  launchesCache.set(result);
+  return result;
 }
 
 export function clearLaunchesCache(): void {
