@@ -109,9 +109,11 @@ log_event() {
 is_real_markdown() {
   local file="$1"
   [[ -f "$file" ]] || return 1
-  local lines
-  lines="$(wc -l <"$file" | tr -d ' ')"
-  [[ "${lines:-0}" -ge 6 ]]
+  local non_empty_lines
+  non_empty_lines="$(awk 'NF { count++ } END { print count + 0 }' "$file")"
+  # Skeleton files created by loop.sh are one-line headings. Treat files with
+  # at least two non-empty lines as "real" content.
+  [[ "${non_empty_lines:-0}" -ge 2 ]]
 }
 
 all_worker_prompts_ready() {
@@ -149,6 +151,11 @@ pane_for_worker() {
     return 1
   fi
   printf "%s" "$pane"
+}
+
+pane_current_command() {
+  local pane="$1"
+  tmux display-message -p -t "$pane" "#{pane_current_command}"
 }
 
 tmux_send() {
@@ -228,6 +235,8 @@ cmd_run() {
 
 cmd_status() {
   local loop_num="$1"
+  local dir
+  dir="$(loop_dir "$loop_num")"
   ensure_loop_exists "$loop_num"
   local adir
   adir="$(automation_dir "$loop_num")"
@@ -238,6 +247,46 @@ cmd_status() {
     echo
     echo "Recent events:"
     tail -n 20 "$adir/events.log"
+  fi
+
+  load_workers
+
+  echo
+  echo "Worker state:"
+  local worker prompt_file summary_file prompt_state summary_state
+  for worker in "${WORKERS[@]}"; do
+    prompt_file="$dir/prompts/$worker.md"
+    summary_file="$dir/summaries/$worker.md"
+    if is_real_markdown "$prompt_file"; then
+      prompt_state="ready"
+    else
+      prompt_state="pending"
+    fi
+    if is_real_markdown "$summary_file"; then
+      summary_state="ready"
+    else
+      summary_state="pending"
+    fi
+    echo "- $worker: prompt=$prompt_state summary=$summary_state"
+  done
+
+  if command -v tmux >/dev/null 2>&1 && [[ -f "$ROOT_DIR/ops/runtime/tmux.env" ]]; then
+    load_tmux_env
+    echo
+    echo "Pane commands:"
+    local pane cmd
+    for worker in "${WORKERS[@]}"; do
+      pane="$(pane_for_worker "$worker" 2>/dev/null || true)"
+      if [[ -z "$pane" ]]; then
+        echo "- $worker: pane=missing"
+        continue
+      fi
+      cmd="$(pane_current_command "$pane" 2>/dev/null || echo unknown)"
+      echo "- $worker: pane=$pane cmd=$cmd"
+    done
+    local orch_cmd
+    orch_cmd="$(pane_current_command "$TMUX_ORCH_PANE" 2>/dev/null || echo unknown)"
+    echo "- orchestrator: pane=$TMUX_ORCH_PANE cmd=$orch_cmd"
   fi
 }
 
