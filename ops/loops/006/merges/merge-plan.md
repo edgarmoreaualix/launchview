@@ -1,22 +1,28 @@
 # Merge Plan (Loop 006)
 
 ## Findings (ordered by severity)
-1. **Medium — watching counter unit test initially duplicated behavior logic**
+1. **Medium — invalid JSON on `/api/watching` POST returned 500**
+   - File: `backend/functions/watching.ts`
+   - Issue: malformed JSON body surfaced as internal server error.
+   - Resolution: return `400` with `Invalid JSON body` for syntax failures.
+   - Status: fixed before merge.
+
+2. **Medium — watching counter unit test initially duplicated behavior logic**
    - File: `tests/unit/watchingCounter.test.ts`
-   - Issue: initial unit test implemented local increment/sanitize logic instead of exercising production service behavior.
-   - Resolution: test now calls production backend service functions (`getWatchingCount`, `incrementWatchingCount`, `resetWatchingCount`) for behavior assertions.
+   - Issue: local helper logic could pass while production service diverged.
+   - Resolution: tests now exercise production backend service functions directly.
    - Status: fixed before merge.
 
 ## Scope compliance
-- `worker-backend`: compliant (`backend/**` only).
-- `worker-frontend`: compliant (`frontend/src/**` only).
-- `worker-qa`: compliant (`tests/**` only).
+- `worker-backend`: compliant (`backend/**`).
+- `worker-frontend`: compliant (`frontend/src/**`).
+- `worker-qa`: compliant (`tests/**`).
 - `worker-sentinel`: compliant (standby summary only).
 
 ## Contract compliance
 - `shared/types.ts` unchanged.
-- Watching counter contract uses `WatchingCount` consistently across backend/frontend/tests.
-- Existing `/api/launches` contract unchanged.
+- Watching counter uses `WatchingCount` consistently across backend/frontend/tests.
+- Existing launch API contract unchanged.
 
 ## Validation gates
 - `cd backend && npx tsc --noEmit` -> pass
@@ -31,13 +37,10 @@
 
 ## Merge execution
 - Worker commits are already linear on `main`; no branch conflict merge required.
-- Additional merge-review fix commit applied for test quality alignment.
+- Merge-review fixes applied and validated.
 
 ## Post-merge deploy checklist
-- [x] `/api/watching` endpoints return contract-valid payloads.
-- [x] Frontend selected-launch panel shows watching count and join action.
-- [x] Join action updates count and handles loading/error states.
+- [x] `/api/watching` supports get/increment/reset with contract-valid responses.
+- [x] Frontend detail panel shows watching counter + join action with loading/error feedback.
 - [x] Build/test/typecheck all green.
-
-## Loop series status
-- Loops 001-006 complete and merged.
+- [x] Loops 001-006 complete and merged.

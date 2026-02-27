@@ -30,7 +30,13 @@ function parseBody(body: string | null): Record<string, unknown> {
     return {};
   }
 
-  const parsed = JSON.parse(body) as unknown;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body) as unknown;
+  } catch {
+    throw new SyntaxError("Invalid JSON body");
+  }
+
   if (typeof parsed !== "object" || parsed === null) {
     throw new Error("Invalid JSON body");
   }
@@ -95,7 +101,11 @@ export const handler: Handler = async (event) => {
     }
 
     return response(405, { error: "Method not allowed" });
-  } catch {
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return response(400, { error: "Invalid JSON body" });
+    }
+
     return response(500, { error: "Internal server error" });
   }
 };
