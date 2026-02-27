@@ -3,28 +3,26 @@ import type { Handler } from "@netlify/functions";
 import { getLaunches } from "../services/launchService";
 import type { LaunchSummary } from "../../shared/types";
 
+const JSON_HEADERS = {
+  "content-type": "application/json; charset=utf-8",
+} as const;
+
+function buildResponse(launches: LaunchSummary[], cacheControl: string) {
+  return {
+    statusCode: 200,
+    headers: {
+      ...JSON_HEADERS,
+      "cache-control": cacheControl,
+    },
+    body: JSON.stringify(launches),
+  };
+}
+
 export const handler: Handler = async () => {
   try {
     const launches = await getLaunches();
-
-    return {
-      statusCode: 200,
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "public, max-age=60",
-      },
-      body: JSON.stringify(launches),
-    };
+    return buildResponse(launches, "public, max-age=60");
   } catch {
-    const empty: LaunchSummary[] = [];
-
-    return {
-      statusCode: 200,
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store",
-      },
-      body: JSON.stringify(empty),
-    };
+    return buildResponse([], "no-store");
   }
 };
