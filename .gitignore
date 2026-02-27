@@ -1,0 +1,3 @@
+ops/runtime/tmux.env
+ops/config/workers.env
+ops/loops/*/.automation/
