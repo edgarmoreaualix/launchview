@@ -1,3 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment
+.env
+.env.local
+frontend/.env
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Ops runtime
 ops/runtime/tmux.env
 ops/config/workers.env
 ops/loops/*/.automation/
+
+# Netlify
+.netlify/
+
+# Cesium
+frontend/public/cesium/
