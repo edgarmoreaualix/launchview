@@ -10,10 +10,23 @@ const DEFAULT_TTL_MS = 60_000;
 const MOCK_FILE_PATH = path.resolve(process.cwd(), "data/mock-launches.json");
 
 export type LaunchDataSource = "ll2" | "mock";
+export type LaunchSourceMode = "live" | "forced-mock" | "fallback-mock";
+export type LaunchCacheStatus = "hit" | "miss" | "stale";
 
 export interface LaunchesResult {
   launches: LaunchSummary[];
   source: LaunchDataSource;
+  sourceMode: LaunchSourceMode;
+  cacheStatus: LaunchCacheStatus;
+}
+
+export class LaunchServiceError extends Error {
+  readonly code = "LAUNCHES_UNAVAILABLE";
+
+  constructor() {
+    super("Unable to load launches");
+    this.name = "LaunchServiceError";
+  }
 }
 
 const launchesCache = new TTLCache<LaunchesResult>(DEFAULT_TTL_MS);
@@ -21,6 +34,26 @@ const launchesCache = new TTLCache<LaunchesResult>(DEFAULT_TTL_MS);
 interface LL2Response {
   results: LL2Launch[];
 }
+
+const ROCKET_MODEL_KEYWORDS: Array<{ key: string; keywords: string[] }> = [
+  { key: "falcon-9", keywords: ["falcon 9"] },
+  { key: "falcon-heavy", keywords: ["falcon heavy"] },
+  { key: "starship", keywords: ["starship", "super heavy"] },
+  { key: "electron", keywords: ["electron"] },
+  { key: "new-shepard", keywords: ["new shepard"] },
+  { key: "new-glenn", keywords: ["new glenn"] },
+  { key: "vulcan-centaur", keywords: ["vulcan"] },
+  { key: "atlas-v", keywords: ["atlas v"] },
+  { key: "ariane-6", keywords: ["ariane 6"] },
+  { key: "ariane-5", keywords: ["ariane 5"] },
+  { key: "soyuz-2", keywords: ["soyuz"] },
+  { key: "long-march", keywords: ["long march", "chang zheng", "cz-"] },
+  { key: "pslv", keywords: ["pslv"] },
+  { key: "gslv", keywords: ["gslv", "lvm3"] },
+  { key: "h3", keywords: [" h3", " h-3", " h-iiia", " h3 "] },
+  { key: "vega", keywords: ["vega"] },
+  { key: "antares", keywords: ["antares"] },
+];
 
 function parseLL2Response(payload: unknown): LL2Response {
   if (
@@ -49,6 +82,45 @@ function parseCoordinate(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function normalizeRocketKey(value: string | null | undefined): string {
+  if (!value) {
+    return "unknown";
+  }
+
+  const normalized = value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized.length > 0 ? normalized : "unknown";
+}
+
+function resolveRocketModelKey(name: string, family: string): string {
+  const normalizedName = name.toLowerCase();
+  const normalizedFamily = family.toLowerCase();
+  const merged = `${normalizedName} ${normalizedFamily}`;
+
+  for (const candidate of ROCKET_MODEL_KEYWORDS) {
+    if (candidate.keywords.some((keyword) => merged.includes(keyword))) {
+      return candidate.key;
+    }
+  }
+
+  const fallbackFromName = normalizeRocketKey(name);
+  if (fallbackFromName !== "unknown") {
+    return fallbackFromName;
+  }
+
+  const fallbackFromFamily = normalizeRocketKey(family);
+  if (fallbackFromFamily !== "unknown") {
+    return fallbackFromFamily;
+  }
+
+  return "generic";
+}
+
 function pickWebcastUrl(vidURLs: LL2Launch["vidURLs"]): string | null {
   if (vidURLs.length === 0) {
     return null;
@@ -59,6 +131,12 @@ function pickWebcastUrl(vidURLs: LL2Launch["vidURLs"]): string | null {
 }
 
 function toLaunchSummary(launch: LL2Launch): LaunchSummary {
+  const rocketFamilyKey = normalizeRocketKey(launch.rocket.configuration.family);
+  const rocketModelKey = resolveRocketModelKey(
+    launch.rocket.configuration.name,
+    launch.rocket.configuration.family,
+  );
+
   return {
     id: launch.id,
     name: launch.name,
@@ -80,6 +158,8 @@ function toLaunchSummary(launch: LL2Launch): LaunchSummary {
     webcastUrl: pickWebcastUrl(launch.vidURLs),
     webcastLive: launch.webcast_live,
     imageUrl: launch.image,
+    rocketFamilyKey,
+    rocketModelKey,
   };
 }
 
@@ -104,29 +184,60 @@ export async function getLaunches(forceRefresh = false): Promise<LaunchesResult>
   if (!forceRefresh) {
     const cached = launchesCache.get();
     if (cached) {
-      return cached;
+      return {
+        ...cached,
+        cacheStatus: "hit",
+      };
     }
   }
 
   let launches: LL2Launch[];
   let source: LaunchDataSource;
+  let sourceMode: LaunchSourceMode;
 
   if (shouldUseMockData()) {
-    launches = await readMockLaunches();
-    source = "mock";
+    try {
+      launches = await readMockLaunches();
+      source = "mock";
+      sourceMode = "forced-mock";
+    } catch {
+      const stale = launchesCache.peek();
+      if (stale) {
+        return {
+          ...stale,
+          cacheStatus: "stale",
+        };
+      }
+      throw new LaunchServiceError();
+    }
   } else {
     try {
       launches = await fetchLL2Launches();
       source = "ll2";
+      sourceMode = "live";
     } catch {
-      launches = await readMockLaunches();
-      source = "mock";
+      try {
+        launches = await readMockLaunches();
+        source = "mock";
+        sourceMode = "fallback-mock";
+      } catch {
+        const stale = launchesCache.peek();
+        if (stale) {
+          return {
+            ...stale,
+            cacheStatus: "stale",
+          };
+        }
+        throw new LaunchServiceError();
+      }
     }
   }
 
   const result: LaunchesResult = {
     launches: launches.map(toLaunchSummary),
     source,
+    sourceMode,
+    cacheStatus: "miss",
   };
   launchesCache.set(result);
   return result;

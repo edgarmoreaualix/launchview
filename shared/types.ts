@@ -54,6 +54,8 @@ export interface LaunchSummary {
   webcastUrl: string | null;
   webcastLive: boolean;
   imageUrl: string | null;
+  rocketFamilyKey: string;
+  rocketModelKey: string;
 }
 
 // Trajectory

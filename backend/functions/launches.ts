@@ -1,8 +1,15 @@
 import type { Handler } from "@netlify/functions";
 
-import { getLaunches } from "../services/launchService";
 import type { LaunchSummary } from "../../shared/types";
-import type { LaunchDataSource } from "../services/launchService";
+import {
+  getLaunches,
+  LaunchServiceError,
+} from "../services/launchService";
+import type {
+  LaunchCacheStatus,
+  LaunchDataSource,
+  LaunchSourceMode,
+} from "../services/launchService";
 
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -11,6 +18,8 @@ const JSON_HEADERS = {
 function buildSuccessResponse(
   launches: LaunchSummary[],
   source: LaunchDataSource,
+  sourceMode: LaunchSourceMode,
+  cacheStatus: LaunchCacheStatus,
   cacheControl: string,
 ) {
   return {
@@ -19,6 +28,8 @@ function buildSuccessResponse(
       ...JSON_HEADERS,
       "cache-control": cacheControl,
       "x-launch-source": source,
+      "x-launch-source-mode": sourceMode,
+      "x-launch-cache-status": cacheStatus,
     },
     body: JSON.stringify(launches),
   };
@@ -43,10 +54,18 @@ function buildErrorResponse(statusCode: number, code: string, message: string) {
 
 export const handler: Handler = async () => {
   try {
-    const { launches, source } = await getLaunches();
-    return buildSuccessResponse(launches, source, "public, max-age=60");
+    const { launches, source, sourceMode, cacheStatus } = await getLaunches();
+    return buildSuccessResponse(
+      launches,
+      source,
+      sourceMode,
+      cacheStatus,
+      "public, max-age=60",
+    );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unexpected error";
-    return buildErrorResponse(500, "LAUNCHES_FETCH_FAILED", message);
+    if (error instanceof LaunchServiceError) {
+      return buildErrorResponse(503, error.code, error.message);
+    }
+    return buildErrorResponse(500, "INTERNAL_ERROR", "Unexpected error");
   }
 };

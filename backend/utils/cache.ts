@@ -25,6 +25,10 @@ export class TTLCache<T> {
     this.expiresAt = Date.now() + this.ttlMs;
   }
 
+  peek(): T | null {
+    return this.value;
+  }
+
   clear(): void {
     this.value = null;
     this.expiresAt = 0;
