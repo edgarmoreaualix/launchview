@@ -6,6 +6,11 @@ interface LaunchDetailPanelProps {
   selectedLaunch: LaunchSummary | null;
   isLoading: boolean;
   error: string | null;
+  watchingCount: number | null;
+  watchingLoading: boolean;
+  watchingError: string | null;
+  isJoiningWatching: boolean;
+  onJoinWatching: () => void;
 }
 
 function trimMissionDescription(value: string | null): string {
@@ -25,6 +30,11 @@ export function LaunchDetailPanel({
   selectedLaunch,
   isLoading,
   error,
+  watchingCount,
+  watchingLoading,
+  watchingError,
+  isJoiningWatching,
+  onJoinWatching,
 }: LaunchDetailPanelProps) {
   if (isLoading) {
     return (
@@ -91,6 +101,27 @@ export function LaunchDetailPanel({
           <dd>{trimMissionDescription(selectedLaunch.missionDescription)}</dd>
         </div>
       </dl>
+      <div className="watching-block">
+        <p className="watching-label">Watching now</p>
+        <p className="watching-count" aria-live="polite">
+          {watchingLoading
+            ? 'Loading...'
+            : watchingError
+              ? 'Unavailable'
+              : (watchingCount ?? 0).toLocaleString('en-US')}
+        </p>
+        {watchingError ? (
+          <p className="watching-error">Unable to load count: {watchingError}</p>
+        ) : null}
+        <button
+          type="button"
+          className="watching-button"
+          onClick={onJoinWatching}
+          disabled={watchingLoading || isJoiningWatching}
+        >
+          {isJoiningWatching ? 'Joining...' : 'Join watching'}
+        </button>
+      </div>
     </section>
   );
 }

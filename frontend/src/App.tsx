@@ -3,6 +3,7 @@ import { Globe } from './components/Globe';
 import { LaunchDetailPanel } from './components/LaunchDetailPanel';
 import { useLaunches } from './hooks/useLaunches';
 import { useTrajectory } from './hooks/useTrajectory';
+import { useWatchingCounter } from './hooks/useWatchingCounter';
 
 function getLaunchesStatusMessage(
   isLoading: boolean,
@@ -53,6 +54,13 @@ function App() {
     elapsedSeconds: trajectoryElapsedSeconds,
     status: trajectoryStatus,
   } = useTrajectory(selectedLaunch);
+  const {
+    count: watchingCount,
+    isLoading: watchingLoading,
+    isUpdating: isJoiningWatching,
+    error: watchingError,
+    joinWatching,
+  } = useWatchingCounter(selectedLaunchId);
   const launchesStatus = getLaunchesStatusMessage(isLoading, error, data.length);
 
   useEffect(() => {
@@ -89,6 +97,13 @@ function App() {
         selectedLaunch={selectedLaunch}
         isLoading={isLoading}
         error={error}
+        watchingCount={watchingCount}
+        watchingLoading={watchingLoading}
+        watchingError={watchingError}
+        isJoiningWatching={isJoiningWatching}
+        onJoinWatching={() => {
+          void joinWatching();
+        }}
       />
     </main>
   );
