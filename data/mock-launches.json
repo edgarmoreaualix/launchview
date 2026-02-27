@@ -1,0 +1,95 @@
+{
+  "count": 3,
+  "results": [
+    {
+      "id": "mock-1",
+      "name": "Falcon 9 Block 5 | Starlink Group 12-1",
+      "net": "2026-03-15T14:30:00Z",
+      "status": { "id": 1, "name": "Go for Launch", "abbrev": "Go" },
+      "rocket": {
+        "id": 1,
+        "configuration": {
+          "name": "Falcon 9",
+          "full_name": "Falcon 9 Block 5",
+          "family": "Falcon",
+          "image_url": null
+        }
+      },
+      "pad": {
+        "id": 80,
+        "name": "Space Launch Complex 40",
+        "latitude": "28.5618",
+        "longitude": "-80.577",
+        "location": { "name": "Cape Canaveral, FL, USA", "country_code": "USA" }
+      },
+      "mission": {
+        "name": "Starlink Group 12-1",
+        "description": "A batch of satellites for the Starlink mega-constellation.",
+        "orbit": { "name": "Low Earth Orbit", "abbrev": "LEO" }
+      },
+      "vidURLs": [{ "priority": 0, "title": "SpaceX Webcast", "url": "https://www.youtube.com/watch?v=example1" }],
+      "image": null,
+      "webcast_live": false
+    },
+    {
+      "id": "mock-2",
+      "name": "Ariane 6 | Galileo SAT",
+      "net": "2026-03-20T10:00:00Z",
+      "status": { "id": 1, "name": "Go for Launch", "abbrev": "Go" },
+      "rocket": {
+        "id": 2,
+        "configuration": {
+          "name": "Ariane 6",
+          "full_name": "Ariane 62",
+          "family": "Ariane",
+          "image_url": null
+        }
+      },
+      "pad": {
+        "id": 180,
+        "name": "ELA-4",
+        "latitude": "5.239",
+        "longitude": "-52.768",
+        "location": { "name": "Guiana Space Centre, French Guiana", "country_code": "FRA" }
+      },
+      "mission": {
+        "name": "Galileo SAT",
+        "description": "Navigation satellite for the European Galileo constellation.",
+        "orbit": { "name": "Medium Earth Orbit", "abbrev": "MEO" }
+      },
+      "vidURLs": [],
+      "image": null,
+      "webcast_live": false
+    },
+    {
+      "id": "mock-3",
+      "name": "Soyuz 2.1b | Progress MS-30",
+      "net": "2026-03-12T08:15:00Z",
+      "status": { "id": 3, "name": "Launch Successful", "abbrev": "Success" },
+      "rocket": {
+        "id": 3,
+        "configuration": {
+          "name": "Soyuz 2.1b",
+          "full_name": "Soyuz 2.1b/Fregat-M",
+          "family": "Soyuz",
+          "image_url": null
+        }
+      },
+      "pad": {
+        "id": 20,
+        "name": "Site 31/6",
+        "latitude": "45.996",
+        "longitude": "63.564",
+        "location": { "name": "Baikonur Cosmodrome, Kazakhstan", "country_code": "KAZ" }
+      },
+      "mission": {
+        "name": "Progress MS-30",
+        "description": "Resupply mission to the International Space Station.",
+        "orbit": { "name": "Low Earth Orbit", "abbrev": "LEO" }
+      },
+      "vidURLs": [{ "priority": 0, "title": "Roscosmos", "url": "https://www.youtube.com/watch?v=example3" }],
+      "image": null,
+      "webcast_live": false
+    }
+  ]
+}
