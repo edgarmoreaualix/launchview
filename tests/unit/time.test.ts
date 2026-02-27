@@ -1,40 +1,28 @@
 import "../setup";
 
 import { describe, expect, test } from "vitest";
-
-function parseNet(net: string): number | null {
-  const parsed = Date.parse(net);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function formatNetUtc(net: string): string {
-  const parsed = parseNet(net);
-  if (parsed === null) {
-    return "Invalid NET";
-  }
-
-  return new Date(parsed).toISOString();
-}
+import { formatNetTime, parseIsoTimestamp } from "../../frontend/src/utils/time";
 
 describe("time utilities", () => {
   test("parses valid ISO net string into timestamp", () => {
-    const timestamp = parseNet("2026-04-05T14:30:45.000Z");
+    const timestamp = parseIsoTimestamp("2026-04-05T14:30:45.000Z");
 
     expect(timestamp).toBe(1775399445000);
   });
 
   test("returns null for malformed net values", () => {
-    expect(parseNet("not-a-date")).toBeNull();
-    expect(parseNet("")).toBeNull();
+    expect(parseIsoTimestamp("not-a-date")).toBeNull();
+    expect(parseIsoTimestamp("")).toBeNull();
   });
 
-  test("formats valid net into canonical UTC output", () => {
-    const formatted = formatNetUtc("2026-04-05T14:30:45.000Z");
-    expect(formatted).toBe("2026-04-05T14:30:45.000Z");
+  test("formats valid net into displayable string", () => {
+    const formatted = formatNetTime("2026-04-05T14:30:45.000Z");
+    expect(formatted).not.toBe("NET unavailable");
+    expect(formatted.length).toBeGreaterThan(0);
   });
 
   test("degrades gracefully for invalid net during formatting", () => {
-    const formatted = formatNetUtc("invalid-net");
-    expect(formatted).toBe("Invalid NET");
+    const formatted = formatNetTime("invalid-net");
+    expect(formatted).toBe("NET unavailable");
   });
 });

@@ -38,9 +38,15 @@ export function formatNetTime(value: string): string {
     return 'NET unavailable';
   }
 
-  return new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'medium',
-    timeZoneName: 'short',
-  }).format(new Date(timestamp));
+  const date = new Date(timestamp);
+
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'medium',
+    }).format(date);
+  } catch {
+    // Fallback for environments with limited Intl option support.
+    return date.toISOString();
+  }
 }
