@@ -3,6 +3,7 @@ import "../setup";
 import { describe, expect, test } from "vitest";
 
 import type { LaunchSummary } from "../../shared/types";
+import { parseIsoTimestamp } from "../../frontend/src/utils/time";
 import {
   launchDetailFixture,
   malformedNetLaunchDetailFixture,
@@ -44,7 +45,7 @@ function validateDetailPanelContract(value: unknown): { valid: boolean; errors: 
   if (typeof candidate.statusAbbrev !== "string") errors.push("statusAbbrev must be string");
   if (typeof candidate.net !== "string") {
     errors.push("net must be string");
-  } else if (!Number.isFinite(Date.parse(candidate.net))) {
+  } else if (parseIsoTimestamp(candidate.net) == null) {
     errors.push("net must be parseable ISO date");
   }
   if (typeof candidate.rocketName !== "string") errors.push("rocketName must be string");
