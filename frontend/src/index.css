@@ -140,3 +140,57 @@ body,
 .detail-error {
   color: #ff9090;
 }
+
+.watching-block {
+  margin-top: 0.8rem;
+  padding-top: 0.72rem;
+  border-top: 1px solid rgba(138, 195, 232, 0.25);
+}
+
+.watching-label {
+  margin: 0;
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(158, 206, 239, 0.88);
+}
+
+.watching-count {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #f4fcff;
+}
+
+.watching-error {
+  margin: 0.35rem 0 0;
+  font-size: 0.79rem;
+  color: #ff9090;
+}
+
+.watching-button {
+  margin-top: 0.55rem;
+  appearance: none;
+  border: 1px solid rgba(99, 208, 255, 0.55);
+  border-radius: 0.55rem;
+  background: linear-gradient(180deg, rgba(27, 109, 164, 0.95), rgba(12, 62, 96, 0.95));
+  color: #eaf7ff;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.watching-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.watching-button:focus-visible {
+  outline: 2px solid #83d5ff;
+  outline-offset: 2px;
+}
+
+.watching-button:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
