@@ -3,7 +3,10 @@ import {
   Cartesian3,
   Color,
   ColorBlendMode,
+  Ellipsoid,
   HeadingPitchRoll,
+  Matrix3,
+  Quaternion,
   Transforms,
 } from 'cesium';
 import { Entity } from 'resium';
@@ -37,24 +40,12 @@ function toDegreesOffset(latitude: number, northMeters: number, eastMeters: numb
   };
 }
 
-function headingFromPoints(from: TrajectoryPoint, to: TrajectoryPoint): number {
-  const latitudeMean = (((from.latitude + to.latitude) / 2) * Math.PI) / 180;
-  const deltaLongitude = (to.longitude - from.longitude) * Math.cos(latitudeMean);
-  const deltaLatitude = to.latitude - from.latitude;
-
-  if (Math.abs(deltaLongitude) < 1e-6 && Math.abs(deltaLatitude) < 1e-6) {
-    return 0;
-  }
-
-  return Math.atan2(deltaLongitude, deltaLatitude);
-}
-
-function orientationFromTrajectory(
+function directionFromTrajectory(
   trajectory: LaunchTrajectory | null,
   activePoint: TrajectoryPoint | null,
-): HeadingPitchRoll {
+): Cartesian3 | null {
   if (!trajectory || !activePoint || trajectory.points.length < 2) {
-    return new HeadingPitchRoll(0, 0, 0);
+    return null;
   }
 
   const previousPoint = sampleTrajectoryPoint(
@@ -67,25 +58,62 @@ function orientationFromTrajectory(
   );
 
   if (!previousPoint || !nextPoint) {
-    return new HeadingPitchRoll(0, 0, 0);
+    return null;
   }
 
-  const heading = headingFromPoints(previousPoint, nextPoint);
-  const latitudeMean = (((previousPoint.latitude + nextPoint.latitude) / 2) * Math.PI) / 180;
-  const deltaLongitudeMeters =
-    (nextPoint.longitude - previousPoint.longitude) *
-    METERS_PER_LAT_DEGREE *
-    Math.max(Math.cos(latitudeMean), 0.15);
-  const deltaLatitudeMeters =
-    (nextPoint.latitude - previousPoint.latitude) * METERS_PER_LAT_DEGREE;
-  const horizontalDistanceMeters = Math.hypot(deltaLatitudeMeters, deltaLongitudeMeters);
-  const altitudeDeltaMeters = nextPoint.altitude - previousPoint.altitude;
-  const pitch =
-    horizontalDistanceMeters > 0
-      ? Math.atan2(altitudeDeltaMeters, horizontalDistanceMeters)
-      : 0;
+  const previousPosition = Cartesian3.fromDegrees(
+    previousPoint.longitude,
+    previousPoint.latitude,
+    previousPoint.altitude,
+  );
+  const nextPosition = Cartesian3.fromDegrees(
+    nextPoint.longitude,
+    nextPoint.latitude,
+    nextPoint.altitude,
+  );
+  const velocity = Cartesian3.subtract(nextPosition, previousPosition, new Cartesian3());
+  const speed = Cartesian3.magnitude(velocity);
+  if (speed < 1e-3) {
+    return null;
+  }
 
-  return new HeadingPitchRoll(heading, pitch, 0);
+  return Cartesian3.normalize(velocity, velocity);
+}
+
+function orientationFromDirection(position: Cartesian3, direction: Cartesian3): Quaternion {
+  const surfaceNormal = Ellipsoid.WGS84.geodeticSurfaceNormal(position, new Cartesian3());
+  let right = Cartesian3.cross(direction, surfaceNormal, new Cartesian3());
+  if (Cartesian3.magnitude(right) < 1e-6) {
+    right = Cartesian3.cross(direction, Cartesian3.UNIT_X, right);
+  }
+  right = Cartesian3.normalize(right, right);
+
+  const up = Cartesian3.normalize(
+    Cartesian3.cross(right, direction, new Cartesian3()),
+    new Cartesian3(),
+  );
+
+  const rotation = new Matrix3(
+    right.x,
+    up.x,
+    direction.x,
+    right.y,
+    up.y,
+    direction.y,
+    right.z,
+    up.z,
+    direction.z,
+  );
+  return Quaternion.fromRotationMatrix(rotation, new Quaternion());
+}
+
+function offsetAlongDirection(
+  basePosition: Cartesian3,
+  direction: Cartesian3,
+  meters: number,
+): Cartesian3 {
+  const offset = Cartesian3.multiplyByScalar(direction, meters, new Cartesian3());
+  return Cartesian3.add(basePosition, offset, new Cartesian3());
 }
 
 async function canLoadModel(route: RocketModelRoute, cache: Map<string, boolean>): Promise<boolean> {
@@ -191,16 +219,20 @@ export function LaunchPadRocket({
       rocketLatitude,
       rocketAltitude,
     );
-    const hpr = inFlight
-      ? orientationFromTrajectory(trajectory, activePoint)
-      : new HeadingPitchRoll(0, 0, 0);
-    const orientation = Transforms.headingPitchRollQuaternion(rocketPosition, hpr);
+    const flightDirection = directionFromTrajectory(trajectory, activePoint);
+    const launchpadUp = Ellipsoid.WGS84.geodeticSurfaceNormal(rocketPosition, new Cartesian3());
+    const padOrientation = orientationFromDirection(rocketPosition, launchpadUp);
+    const towerPosition = Cartesian3.fromDegrees(
+      selectedLaunch.padLongitude + towerOffset.longitudeDelta,
+      selectedLaunch.padLatitude + towerOffset.latitudeDelta,
+      towerHeight / 2,
+    );
+    const orientation =
+      inFlight && flightDirection
+        ? orientationFromDirection(rocketPosition, flightDirection)
+        : padOrientation;
     const towerOrientation = Transforms.headingPitchRollQuaternion(
-      Cartesian3.fromDegrees(
-        selectedLaunch.padLongitude + towerOffset.longitudeDelta,
-        selectedLaunch.padLatitude + towerOffset.latitudeDelta,
-        towerHeight / 2,
-      ),
+      towerPosition,
       new HeadingPitchRoll(0, 0, 0),
     );
 
@@ -208,22 +240,19 @@ export function LaunchPadRocket({
       inFlight,
       orientation,
       towerOrientation,
-      bodyPosition: Cartesian3.fromDegrees(
-        rocketLongitude,
-        rocketLatitude,
-        rocketAltitude + bodyLength / 2,
+      bodyPosition: rocketPosition,
+      nosePosition: offsetAlongDirection(
+        rocketPosition,
+        inFlight && flightDirection ? flightDirection : launchpadUp,
+        bodyLength / 2 + noseLength / 2,
       ),
-      nosePosition: Cartesian3.fromDegrees(
-        rocketLongitude,
-        rocketLatitude,
-        rocketAltitude + bodyLength + noseLength / 2,
+      plumePosition: offsetAlongDirection(
+        rocketPosition,
+        inFlight && flightDirection ? flightDirection : launchpadUp,
+        -(bodyLength / 2 + 8),
       ),
       rocketPosition,
-      towerPosition: Cartesian3.fromDegrees(
-        selectedLaunch.padLongitude + towerOffset.longitudeDelta,
-        selectedLaunch.padLatitude + towerOffset.latitudeDelta,
-        towerHeight / 2,
-      ),
+      towerPosition,
       padPosition: Cartesian3.fromDegrees(
         selectedLaunch.padLongitude,
         selectedLaunch.padLatitude,
@@ -297,6 +326,19 @@ export function LaunchPadRocket({
               material: Color.fromCssColorString('#ffd87a').withAlpha(0.96),
             }}
           />
+          {rocketPose.inFlight ? (
+            <Entity
+              id={`launch-rocket-exhaust-${selectedLaunch.id}`}
+              position={rocketPose.plumePosition}
+              orientation={rocketPose.orientation}
+              cylinder={{
+                length: 16,
+                topRadius: 1.6,
+                bottomRadius: 0.12,
+                material: Color.fromCssColorString('#8be7ff').withAlpha(0.72),
+              }}
+            />
+          ) : null}
         </>
       ) : (
         <Entity
