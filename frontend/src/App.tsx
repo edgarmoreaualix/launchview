@@ -1,35 +1,31 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Globe } from './components/Globe';
+import { useLaunches } from './hooks/useLaunches';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { data, isLoading, error } = useLaunches();
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <main className="app-root">
+      <Globe />
+      <section className="status-panel" aria-live="polite">
+        <h1 className="status-title">Launchview</h1>
+        {isLoading ? (
+          <p className="status-copy">Loading launches...</p>
+        ) : null}
+        {!isLoading && error ? (
+          <p className="status-copy status-error">
+            Failed to load launch data. {error}
+          </p>
+        ) : null}
+        {!isLoading && !error && data.length === 0 ? (
+          <p className="status-copy">No launches found.</p>
+        ) : null}
+        {!isLoading && !error && data.length > 0 ? (
+          <p className="status-copy">Loaded {data.length} launches.</p>
+        ) : null}
+      </section>
+    </main>
+  );
 }
 
-export default App
+export default App;
