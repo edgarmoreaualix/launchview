@@ -1,3 +1,4 @@
+import "../setup";
 import { describe, expect, test } from "vitest";
 
 import type { LaunchSummary } from "../../shared/types";

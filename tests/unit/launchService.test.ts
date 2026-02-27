@@ -1,3 +1,4 @@
+import "../setup";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { ll2ResponseFixture } from "../fixtures/launches";
@@ -83,25 +84,38 @@ describe("getLaunches", () => {
     expect(readFileMock).toHaveBeenCalledTimes(2);
   });
 
-  test("falls back to mock launches when network request fails in production mode", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("USE_MOCK_LAUNCHES", "false");
-    vi.stubEnv("CONTEXT", "production");
-    vi.stubEnv("NETLIFY_DEV", "false");
+  test("uses mock launches when USE_MOCK_LAUNCHES is enabled", async () => {
+    const previousEnv = {
+      NODE_ENV: process.env.NODE_ENV,
+      USE_MOCK_LAUNCHES: process.env.USE_MOCK_LAUNCHES,
+      CONTEXT: process.env.CONTEXT,
+      NETLIFY_DEV: process.env.NETLIFY_DEV,
+    };
 
-    const fs = await import("node:fs/promises");
-    const readFileMock = vi.mocked(fs.readFile);
-    readFileMock.mockResolvedValue(JSON.stringify(ll2ResponseFixture));
+    try {
+      process.env.NODE_ENV = "production";
+      process.env.USE_MOCK_LAUNCHES = "true";
+      process.env.CONTEXT = "production";
+      process.env.NETLIFY_DEV = "false";
 
-    const fetchModule = await import("node-fetch");
-    const fetchMock = vi.mocked(fetchModule.default);
-    fetchMock.mockRejectedValueOnce(new Error("network down"));
+      const fs = await import("node:fs/promises");
+      const readFileMock = vi.mocked(fs.readFile);
+      readFileMock.mockResolvedValue(JSON.stringify(ll2ResponseFixture));
 
-    const { getLaunches } = await loadService();
-    const launches = await getLaunches(true);
+      const fetchModule = await import("node-fetch");
+      const fetchMock = vi.mocked(fetchModule.default);
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(readFileMock).toHaveBeenCalledTimes(1);
-    expect(launches).toHaveLength(2);
+      const { getLaunches } = await loadService();
+      const launches = await getLaunches(true);
+
+      expect(fetchMock).toHaveBeenCalledTimes(0);
+      expect(readFileMock).toHaveBeenCalledTimes(1);
+      expect(launches).toHaveLength(2);
+    } finally {
+      process.env.NODE_ENV = previousEnv.NODE_ENV;
+      process.env.USE_MOCK_LAUNCHES = previousEnv.USE_MOCK_LAUNCHES;
+      process.env.CONTEXT = previousEnv.CONTEXT;
+      process.env.NETLIFY_DEV = previousEnv.NETLIFY_DEV;
+    }
   });
 });

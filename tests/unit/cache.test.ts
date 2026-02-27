@@ -1,3 +1,4 @@
+import "../setup";
 import { describe, expect, test, vi } from "vitest";
 
 import { TTLCache } from "../../backend/utils/cache";
