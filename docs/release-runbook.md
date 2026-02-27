@@ -13,9 +13,7 @@ From repo root:
 
 ```bash
 cd /Users/edgarmoreau/100/launchview
-cd backend && npx tsc --noEmit
-cd ../frontend && npm run build
-cd .. && npm run test
+npm run verify
 ```
 
 Expected:
@@ -91,5 +89,5 @@ If production regression is detected:
 4. Re-run validation and verify production again.
 
 ## 6) Known Limitation
-- Watching counters are currently in-memory and reset on cold start/redeploy.
-- Next hardening step: persist counters in durable storage (e.g., Netlify Blobs/DB/Redis-equivalent).
+- Watching counters are file-backed in `/tmp` and survive warm runtime reuse, but are still ephemeral across cold starts/redeploys.
+- Next hardening step: move watching counters to durable managed storage (Netlify Blobs/DB/Redis-equivalent).

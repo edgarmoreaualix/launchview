@@ -7,10 +7,16 @@ import {
   watchingCountFixtures,
 } from "../fixtures/watching";
 import {
+  clearWatchingCountsForTests,
   getWatchingCount,
   incrementWatchingCount,
   resetWatchingCount,
 } from "../../backend/services/watchingService";
+import { beforeEach } from "vitest";
+
+beforeEach(async () => {
+  await clearWatchingCountsForTests();
+});
 
 describe("watching counter behavior", () => {
   test("accepts only valid watching fixtures for service-driven expectations", () => {
@@ -23,28 +29,28 @@ describe("watching counter behavior", () => {
     expect(malformedLaunchIds).toEqual(["launch-1", "launch-2", "launch-4"]);
   });
 
-  test("increments existing launch watching count", () => {
+  test("increments existing launch watching count", async () => {
     const launchId = "watching-test-existing";
-    resetWatchingCount(launchId);
+    await resetWatchingCount(launchId);
 
-    incrementWatchingCount(launchId, 12);
-    const result = incrementWatchingCount(launchId, 1);
+    await incrementWatchingCount(launchId, 12);
+    const result = await incrementWatchingCount(launchId, 1);
 
     expect(result).toEqual({ launchId, count: 13 });
-    expect(getWatchingCount(launchId)).toEqual({ launchId, count: 13 });
+    expect(await getWatchingCount(launchId)).toEqual({ launchId, count: 13 });
 
-    resetWatchingCount(launchId);
+    await resetWatchingCount(launchId);
   });
 
-  test("starts new launch watching count at 1 when missing", () => {
+  test("starts new launch watching count at 1 when missing", async () => {
     const launchId = "watching-test-new";
-    resetWatchingCount(launchId);
+    await resetWatchingCount(launchId);
 
-    const result = incrementWatchingCount(launchId, 1);
+    const result = await incrementWatchingCount(launchId, 1);
 
     expect(result).toEqual({ launchId, count: 1 });
-    expect(getWatchingCount(launchId)).toEqual({ launchId, count: 1 });
+    expect(await getWatchingCount(launchId)).toEqual({ launchId, count: 1 });
 
-    resetWatchingCount(launchId);
+    await resetWatchingCount(launchId);
   });
 });

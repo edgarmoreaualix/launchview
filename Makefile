@@ -3,7 +3,7 @@ SHELL := /bin/bash
 N ?= 1
 INTERVAL ?= 3
 
-.PHONY: loop-start loop-check loop-assemble watch-run watch-tick watch-status watch-reset
+.PHONY: loop-start loop-check loop-assemble watch-run watch-tick watch-status watch-reset verify
 
 loop-start:
 	./ops/bin/loop.sh start $(N)
@@ -25,3 +25,6 @@ watch-status:
 
 watch-reset:
 	./ops/bin/watch-loop.sh reset $(N)
+
+verify:
+	npm run verify

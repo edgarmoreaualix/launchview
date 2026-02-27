@@ -52,23 +52,26 @@ function parseDelta(input: unknown): number {
   return input;
 }
 
-function handleGet(launchId: string | null): ReturnType<typeof response> {
+async function handleGet(launchId: string | null): Promise<ReturnType<typeof response>> {
   if (launchId) {
-    const count: WatchingCount = getWatchingCount(launchId);
+    const count: WatchingCount = await getWatchingCount(launchId);
     return response(200, count);
   }
 
-  return response(200, listWatchingCounts());
+  return response(200, await listWatchingCounts());
 }
 
-function handlePost(launchId: string, body: Record<string, unknown>): ReturnType<typeof response> {
+async function handlePost(
+  launchId: string,
+  body: Record<string, unknown>,
+): Promise<ReturnType<typeof response>> {
   const delta = parseDelta(body.delta);
-  const updated = incrementWatchingCount(launchId, delta);
+  const updated = await incrementWatchingCount(launchId, delta);
   return response(200, updated);
 }
 
-function handleDelete(launchId: string): ReturnType<typeof response> {
-  const updated = resetWatchingCount(launchId);
+async function handleDelete(launchId: string): Promise<ReturnType<typeof response>> {
+  const updated = await resetWatchingCount(launchId);
   return response(200, updated);
 }
 
@@ -78,7 +81,7 @@ export const handler: Handler = async (event) => {
 
   try {
     if (method === "GET") {
-      return handleGet(launchIdQuery);
+      return await handleGet(launchIdQuery);
     }
 
     if (method === "POST") {
@@ -89,7 +92,7 @@ export const handler: Handler = async (event) => {
         return response(400, { error: "launchId is required" });
       }
 
-      return handlePost(launchId, body);
+      return await handlePost(launchId, body);
     }
 
     if (method === "DELETE") {
@@ -97,7 +100,7 @@ export const handler: Handler = async (event) => {
         return response(400, { error: "launchId is required" });
       }
 
-      return handleDelete(launchIdQuery);
+      return await handleDelete(launchIdQuery);
     }
 
     return response(405, { error: "Method not allowed" });

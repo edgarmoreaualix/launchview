@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "verify": "cd backend && npx tsc --noEmit && cd ../frontend && npm run build && cd .. && npm run test"
   },
   "devDependencies": {
     "vitest": "^3.2.4"
