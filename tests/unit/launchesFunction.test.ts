@@ -5,6 +5,9 @@ import { launchDetailFixture } from "../fixtures/launchDetail";
 
 vi.mock("../../backend/services/launchService", () => ({
   getLaunches: vi.fn(),
+  LaunchServiceError: class LaunchServiceError extends Error {
+    code = "LAUNCHES_UNAVAILABLE";
+  },
 }));
 
 async function loadHandler() {
@@ -25,6 +28,8 @@ describe("launches function", () => {
     vi.mocked(service.getLaunches).mockResolvedValue({
       launches: [launchDetailFixture],
       source: "ll2",
+      sourceMode: "live",
+      cacheStatus: "miss",
     });
 
     const { handler } = await loadHandler();
@@ -32,6 +37,8 @@ describe("launches function", () => {
 
     expect(response?.statusCode).toBe(200);
     expect(response?.headers?.["x-launch-source"]).toBe("ll2");
+    expect(response?.headers?.["x-launch-source-mode"]).toBe("live");
+    expect(response?.headers?.["x-launch-cache-status"]).toBe("miss");
     expect(response?.headers?.["cache-control"]).toBe("public, max-age=60");
     expect(JSON.parse(response?.body ?? "null")).toEqual([launchDetailFixture]);
   });
@@ -41,6 +48,8 @@ describe("launches function", () => {
     vi.mocked(service.getLaunches).mockResolvedValue({
       launches: [launchDetailFixture],
       source: "mock",
+      sourceMode: "forced-mock",
+      cacheStatus: "hit",
     });
 
     const { handler } = await loadHandler();
@@ -48,6 +57,8 @@ describe("launches function", () => {
 
     expect(response?.statusCode).toBe(200);
     expect(response?.headers?.["x-launch-source"]).toBe("mock");
+    expect(response?.headers?.["x-launch-source-mode"]).toBe("forced-mock");
+    expect(response?.headers?.["x-launch-cache-status"]).toBe("hit");
     expect(JSON.parse(response?.body ?? "null")).toEqual([launchDetailFixture]);
   });
 
@@ -64,7 +75,7 @@ describe("launches function", () => {
     expect(body.ok).toBe(false);
     expect(body.error).toEqual(
       expect.objectContaining({
-        code: "LAUNCHES_FETCH_FAILED",
+        code: "INTERNAL_ERROR",
       }),
     );
     expect(typeof body.error.message).toBe("string");

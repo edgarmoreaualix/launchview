@@ -74,7 +74,11 @@ describe("getLaunches", () => {
     const second = await getLaunches();
 
     expect(readFileMock).toHaveBeenCalledTimes(1);
-    expect(second).toEqual(first);
+    expect(first.cacheStatus).toBe("miss");
+    expect(second.cacheStatus).toBe("hit");
+    expect(second.launches).toEqual(first.launches);
+    expect(second.source).toBe(first.source);
+    expect(second.sourceMode).toBe(first.sourceMode);
   });
 
   test("bypasses cache when forceRefresh is true", async () => {
