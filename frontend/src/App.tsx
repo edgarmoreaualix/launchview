@@ -4,6 +4,38 @@ import { LaunchDetailPanel } from './components/LaunchDetailPanel';
 import { useLaunches } from './hooks/useLaunches';
 import { useTrajectory } from './hooks/useTrajectory';
 
+function getLaunchesStatusMessage(
+  isLoading: boolean,
+  error: string | null,
+  launchesCount: number,
+): { text: string; isError: boolean } {
+  if (isLoading) {
+    return { text: 'Loading launches...', isError: false };
+  }
+
+  if (error) {
+    return { text: `Failed to load launch data. ${error}`, isError: true };
+  }
+
+  if (launchesCount === 0) {
+    return { text: 'No launches found.', isError: false };
+  }
+
+  return { text: `Loaded ${launchesCount} launches.`, isError: false };
+}
+
+function getTrajectoryStatusMessage(status: 'idle' | 'invalid' | 'ready'): string {
+  if (status === 'idle') {
+    return 'Trajectory: select a launch to start animation.';
+  }
+
+  if (status === 'invalid') {
+    return 'Trajectory: unavailable for selected launch coordinates.';
+  }
+
+  return 'Trajectory: animation active for selected launch.';
+}
+
 function App() {
   const { data, isLoading, error } = useLaunches();
   const [selectedLaunchId, setSelectedLaunchId] = useState<string | null>(null);
@@ -21,6 +53,7 @@ function App() {
     elapsedSeconds: trajectoryElapsedSeconds,
     status: trajectoryStatus,
   } = useTrajectory(selectedLaunch);
+  const launchesStatus = getLaunchesStatusMessage(isLoading, error, data.length);
 
   useEffect(() => {
     if (!selectedLaunchId) {
@@ -45,32 +78,11 @@ function App() {
       />
       <section className="status-panel" aria-live="polite">
         <h1 className="status-title">Launchview</h1>
-        {isLoading ? (
-          <p className="status-copy">Loading launches...</p>
-        ) : null}
-        {!isLoading && error ? (
-          <p className="status-copy status-error">
-            Failed to load launch data. {error}
-          </p>
-        ) : null}
-        {!isLoading && !error && data.length === 0 ? (
-          <p className="status-copy">No launches found.</p>
-        ) : null}
-        {!isLoading && !error && data.length > 0 ? (
-          <p className="status-copy">Loaded {data.length} launches.</p>
-        ) : null}
+        <p className={`status-copy${launchesStatus.isError ? ' status-error' : ''}`}>
+          {launchesStatus.text}
+        </p>
         {!isLoading && !error ? (
-          <p className="trajectory-status">
-            {trajectoryStatus === 'idle'
-              ? 'Trajectory: select a launch to start animation.'
-              : null}
-            {trajectoryStatus === 'invalid'
-              ? 'Trajectory: unavailable for selected launch coordinates.'
-              : null}
-            {trajectoryStatus === 'ready'
-              ? 'Trajectory: animation active for selected launch.'
-              : null}
-          </p>
+          <p className="trajectory-status">{getTrajectoryStatusMessage(trajectoryStatus)}</p>
         ) : null}
       </section>
       <LaunchDetailPanel
