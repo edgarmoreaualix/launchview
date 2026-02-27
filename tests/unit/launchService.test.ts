@@ -15,11 +15,15 @@ async function loadService() {
   return import("../../backend/services/launchService");
 }
 
+async function loadFreshService() {
+  const service = await loadService();
+  service.clearLaunchesCache();
+  return service;
+}
+
 describe("getLaunches", () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.resetModules();
-    const { clearLaunchesCache } = await loadService();
-    clearLaunchesCache();
   });
 
   test("transforms LL2 payload into LaunchSummary with edge-case handling", async () => {
@@ -27,10 +31,12 @@ describe("getLaunches", () => {
     const readFileMock = vi.mocked(fs.readFile);
     readFileMock.mockResolvedValueOnce(JSON.stringify(ll2ResponseFixture));
 
-    const { getLaunches } = await loadService();
-    const launches = await getLaunches();
+    const { getLaunches } = await loadFreshService();
+    const result = await getLaunches();
+    const launches = result.launches;
 
     expect(launches).toHaveLength(2);
+    expect(result.source).toBe("mock");
 
     expect(launches[0]).toMatchObject({
       id: "launch-1",
@@ -62,7 +68,7 @@ describe("getLaunches", () => {
     const readFileMock = vi.mocked(fs.readFile);
     readFileMock.mockResolvedValue(JSON.stringify(ll2ResponseFixture));
 
-    const { getLaunches } = await loadService();
+    const { getLaunches } = await loadFreshService();
 
     const first = await getLaunches();
     const second = await getLaunches();
@@ -76,7 +82,7 @@ describe("getLaunches", () => {
     const readFileMock = vi.mocked(fs.readFile);
     readFileMock.mockResolvedValue(JSON.stringify(ll2ResponseFixture));
 
-    const { getLaunches } = await loadService();
+    const { getLaunches } = await loadFreshService();
 
     await getLaunches();
     await getLaunches(true);
@@ -105,12 +111,14 @@ describe("getLaunches", () => {
       const fetchModule = await import("node-fetch");
       const fetchMock = vi.mocked(fetchModule.default);
 
-      const { getLaunches } = await loadService();
-      const launches = await getLaunches(true);
+      const { getLaunches } = await loadFreshService();
+      const result = await getLaunches(true);
+      const launches = result.launches;
 
       expect(fetchMock).toHaveBeenCalledTimes(0);
       expect(readFileMock).toHaveBeenCalledTimes(1);
       expect(launches).toHaveLength(2);
+      expect(result.source).toBe("mock");
     } finally {
       process.env.NODE_ENV = previousEnv.NODE_ENV;
       process.env.USE_MOCK_LAUNCHES = previousEnv.USE_MOCK_LAUNCHES;
@@ -118,4 +126,5 @@ describe("getLaunches", () => {
       process.env.NETLIFY_DEV = previousEnv.NETLIFY_DEV;
     }
   });
+
 });
