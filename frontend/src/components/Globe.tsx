@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { Ion, OpenStreetMapImageryProvider } from 'cesium';
 import type { Viewer as CesiumViewer } from 'cesium';
 import { type CesiumComponentRef, Viewer } from 'resium';
+import type { LaunchSummary } from '../../../shared/types';
+import { LaunchPins } from './LaunchPins';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 const cesiumIonToken = import.meta.env.VITE_CESIUM_ION_TOKEN?.trim() ?? '';
@@ -10,7 +12,13 @@ if (cesiumIonToken) {
   Ion.defaultAccessToken = cesiumIonToken;
 }
 
-export function Globe() {
+interface GlobeProps {
+  launches: LaunchSummary[];
+  selectedLaunchId: string | null;
+  onSelectLaunch: (launchId: string) => void;
+}
+
+export function Globe({ launches, selectedLaunchId, onSelectLaunch }: GlobeProps) {
   const viewerRef = useRef<CesiumComponentRef<CesiumViewer>>(null);
 
   useEffect(() => {
@@ -47,7 +55,13 @@ export function Globe() {
         infoBox={false}
         selectionIndicator={false}
         baseLayer={cesiumIonToken ? undefined : false}
-      />
+      >
+        <LaunchPins
+          launches={launches}
+          selectedLaunchId={selectedLaunchId}
+          onSelectLaunch={onSelectLaunch}
+        />
+      </Viewer>
     </div>
   );
 }

@@ -74,3 +74,27 @@ body,
 .status-error {
   color: #ff9090;
 }
+
+.selected-launch-panel {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 10;
+  max-width: min(24rem, calc(100vw - 2rem));
+  padding: 0.8rem 0.95rem;
+  border: 1px solid rgba(69, 194, 255, 0.4);
+  border-radius: 0.75rem;
+  background: rgba(3, 16, 30, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+.selected-launch-title {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.selected-launch-copy {
+  margin: 0.25rem 0 0;
+  font-size: 0.86rem;
+  color: rgba(219, 234, 255, 0.93);
+}
