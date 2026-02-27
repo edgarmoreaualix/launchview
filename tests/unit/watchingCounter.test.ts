@@ -2,67 +2,49 @@ import "../setup";
 
 import { describe, expect, test } from "vitest";
 
-import type { WatchingCount } from "../../shared/types";
 import {
   malformedWatchingCountFixtures,
   watchingCountFixtures,
 } from "../fixtures/watching";
-
-function isValidWatchingCount(value: unknown): value is WatchingCount {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-
-  return (
-    typeof candidate.launchId === "string" &&
-    typeof candidate.count === "number" &&
-    Number.isFinite(candidate.count) &&
-    Number.isInteger(candidate.count) &&
-    candidate.count >= 0
-  );
-}
-
-function sanitizeWatchingPayload(payload: unknown[]): WatchingCount[] {
-  return payload.filter(isValidWatchingCount);
-}
-
-function incrementWatchingCount(current: WatchingCount[], launchId: string): WatchingCount[] {
-  const existing = current.find((item) => item.launchId === launchId);
-
-  if (!existing) {
-    return [...current, { launchId, count: 1 }];
-  }
-
-  return current.map((item) =>
-    item.launchId === launchId ? { ...item, count: item.count + 1 } : item,
-  );
-}
+import {
+  getWatchingCount,
+  incrementWatchingCount,
+  resetWatchingCount,
+} from "../../backend/services/watchingService";
 
 describe("watching counter behavior", () => {
-  test("sanitizes malformed watching payload entries", () => {
-    const payload = [...watchingCountFixtures, ...malformedWatchingCountFixtures];
+  test("accepts only valid watching fixtures for service-driven expectations", () => {
+    const validLaunchIds = watchingCountFixtures.map((entry) => entry.launchId);
+    const malformedLaunchIds = malformedWatchingCountFixtures
+      .map((entry) => (typeof entry.launchId === "string" ? entry.launchId : null))
+      .filter((value): value is string => value !== null);
 
-    const sanitized = sanitizeWatchingPayload(payload);
-
-    expect(sanitized).toEqual(watchingCountFixtures);
+    expect(validLaunchIds).toEqual(["launch-1", "launch-2", "launch-3"]);
+    expect(malformedLaunchIds).toEqual(["launch-1", "launch-2", "launch-4"]);
   });
 
   test("increments existing launch watching count", () => {
-    const result = incrementWatchingCount(watchingCountFixtures, "launch-1");
+    const launchId = "watching-test-existing";
+    resetWatchingCount(launchId);
 
-    expect(result).toEqual([
-      { launchId: "launch-1", count: 13 },
-      { launchId: "launch-2", count: 0 },
-      { launchId: "launch-3", count: 3 },
-    ]);
+    incrementWatchingCount(launchId, 12);
+    const result = incrementWatchingCount(launchId, 1);
+
+    expect(result).toEqual({ launchId, count: 13 });
+    expect(getWatchingCount(launchId)).toEqual({ launchId, count: 13 });
+
+    resetWatchingCount(launchId);
   });
 
   test("starts new launch watching count at 1 when missing", () => {
-    const result = incrementWatchingCount(watchingCountFixtures, "launch-99");
+    const launchId = "watching-test-new";
+    resetWatchingCount(launchId);
 
-    expect(result).toContainEqual({ launchId: "launch-99", count: 1 });
-    expect(result).toHaveLength(4);
+    const result = incrementWatchingCount(launchId, 1);
+
+    expect(result).toEqual({ launchId, count: 1 });
+    expect(getWatchingCount(launchId)).toEqual({ launchId, count: 1 });
+
+    resetWatchingCount(launchId);
   });
 });
