@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   ArcGisMapServerImageryProvider,
   BoundingSphere,
@@ -17,6 +17,7 @@ import type {
   TrajectoryPoint,
 } from '../../../shared/types';
 import { LaunchPins } from './LaunchPins';
+import { LaunchPadRocket } from './LaunchPadRocket';
 import { TrajectoryTrail } from './TrajectoryTrail';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
@@ -45,6 +46,10 @@ export function Globe({
 }: GlobeProps) {
   const viewerRef = useRef<CesiumComponentRef<CesiumViewer>>(null);
   const hasInitializedViewRef = useRef(false);
+  const selectedLaunch = useMemo(
+    () => launches.find((launch) => launch.id === selectedLaunchId) ?? null,
+    [launches, selectedLaunchId],
+  );
 
   useEffect(() => {
     let isCancelled = false;
@@ -141,14 +146,7 @@ export function Globe({
 
   useEffect(() => {
     const viewer = viewerRef.current?.cesiumElement;
-    if (!viewer || !selectedLaunchId) {
-      return;
-    }
-
-    const selectedLaunch =
-      launches.find((launch) => launch.id === selectedLaunchId) ?? null;
-
-    if (!selectedLaunch) {
+    if (!viewer || !selectedLaunch) {
       return;
     }
 
@@ -160,7 +158,7 @@ export function Globe({
       ),
       duration: 1.9,
     });
-  }, [launches, selectedLaunchId]);
+  }, [selectedLaunch]);
 
   return (
     <div className="globe-shell" role="presentation" aria-hidden="true">
@@ -189,6 +187,7 @@ export function Globe({
           activePoint={trajectoryPoint}
           elapsedSeconds={trajectoryElapsedSeconds}
         />
+        <LaunchPadRocket selectedLaunch={selectedLaunch} trajectory={trajectory} />
       </Viewer>
     </div>
   );

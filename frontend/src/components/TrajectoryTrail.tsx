@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Cartesian3, Color } from 'cesium';
+import { useEffect, useMemo, useRef } from 'react';
+import { CallbackPositionProperty, CallbackProperty, Cartesian3, Color } from 'cesium';
 import { Entity } from 'resium';
 import type { LaunchTrajectory, TrajectoryPoint } from '../../../shared/types';
 
@@ -20,6 +20,14 @@ export function TrajectoryTrail({
   activePoint,
   elapsedSeconds,
 }: TrajectoryTrailProps) {
+  const activePointRef = useRef<TrajectoryPoint | null>(activePoint);
+  const elapsedSecondsRef = useRef(elapsedSeconds);
+
+  useEffect(() => {
+    activePointRef.current = activePoint;
+    elapsedSecondsRef.current = elapsedSeconds;
+  }, [activePoint, elapsedSeconds]);
+
   const fullPositions = useMemo(() => {
     if (!trajectory || trajectory.points.length < 2) {
       return null;
@@ -29,18 +37,46 @@ export function TrajectoryTrail({
   }, [trajectory]);
 
   const traveledPositions = useMemo(() => {
-    if (!trajectory || trajectory.points.length < 2 || !activePoint) {
+    if (!trajectory || !fullPositions) {
       return null;
     }
 
-    const trailPoints = trajectory.points.filter((point) => point.time <= elapsedSeconds);
-    const pathPoints = [...trailPoints, activePoint];
-    if (pathPoints.length < 2) {
+    return new CallbackProperty(() => {
+      const elapsed = elapsedSecondsRef.current;
+      const marker = activePointRef.current;
+      const basePoint = trajectory.points[0];
+      const activeMarker = marker ?? basePoint;
+      const positions: Cartesian3[] = [
+        fullPositions[0],
+        Cartesian3.fromDegrees(
+          activeMarker.longitude,
+          activeMarker.latitude,
+          activeMarker.altitude,
+        ),
+      ];
+
+      for (let index = 1; index < trajectory.points.length; index += 1) {
+        const point = trajectory.points[index];
+        if (point.time > elapsed) {
+          break;
+        }
+        positions.splice(positions.length - 1, 0, fullPositions[index]);
+      }
+
+      return positions;
+    }, false);
+  }, [fullPositions, trajectory]);
+
+  const markerPosition = useMemo(() => {
+    if (!trajectory) {
       return null;
     }
 
-    return toCartesianPositions(pathPoints);
-  }, [activePoint, elapsedSeconds, trajectory]);
+    return new CallbackPositionProperty(() => {
+      const marker = activePointRef.current ?? trajectory.points[0];
+      return Cartesian3.fromDegrees(marker.longitude, marker.latitude, marker.altitude);
+    }, false);
+  }, [trajectory]);
 
   if (!trajectory || !fullPositions) {
     return null;
@@ -66,14 +102,10 @@ export function TrajectoryTrail({
           }}
         />
       ) : null}
-      {activePoint ? (
+      {markerPosition ? (
         <Entity
           id={`trajectory-marker-${trajectory.launchId}`}
-          position={Cartesian3.fromDegrees(
-            activePoint.longitude,
-            activePoint.latitude,
-            activePoint.altitude,
-          )}
+          position={markerPosition}
           point={{
             pixelSize: 11,
             color: Color.fromCssColorString('#ffe46b'),
