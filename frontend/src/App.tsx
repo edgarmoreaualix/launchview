@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Globe } from './components/Globe';
 import { LaunchDetailPanel } from './components/LaunchDetailPanel';
 import { useLaunches } from './hooks/useLaunches';
+import { useTrajectory } from './hooks/useTrajectory';
 
 function App() {
   const { data, isLoading, error } = useLaunches();
@@ -14,6 +15,12 @@ function App() {
 
     return data.find((launch) => launch.id === selectedLaunchId) ?? null;
   }, [data, selectedLaunchId]);
+  const {
+    trajectory,
+    activePoint: trajectoryPoint,
+    elapsedSeconds: trajectoryElapsedSeconds,
+    status: trajectoryStatus,
+  } = useTrajectory(selectedLaunch);
 
   useEffect(() => {
     if (!selectedLaunchId) {
@@ -32,6 +39,9 @@ function App() {
         launches={data}
         selectedLaunchId={selectedLaunchId}
         onSelectLaunch={setSelectedLaunchId}
+        trajectory={trajectory}
+        trajectoryPoint={trajectoryPoint}
+        trajectoryElapsedSeconds={trajectoryElapsedSeconds}
       />
       <section className="status-panel" aria-live="polite">
         <h1 className="status-title">Launchview</h1>
@@ -48,6 +58,19 @@ function App() {
         ) : null}
         {!isLoading && !error && data.length > 0 ? (
           <p className="status-copy">Loaded {data.length} launches.</p>
+        ) : null}
+        {!isLoading && !error ? (
+          <p className="trajectory-status">
+            {trajectoryStatus === 'idle'
+              ? 'Trajectory: select a launch to start animation.'
+              : null}
+            {trajectoryStatus === 'invalid'
+              ? 'Trajectory: unavailable for selected launch coordinates.'
+              : null}
+            {trajectoryStatus === 'ready'
+              ? 'Trajectory: animation active for selected launch.'
+              : null}
+          </p>
         ) : null}
       </section>
       <LaunchDetailPanel

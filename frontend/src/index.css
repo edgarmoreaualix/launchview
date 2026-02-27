@@ -75,6 +75,12 @@ body,
   color: #ff9090;
 }
 
+.trajectory-status {
+  margin: 0.45rem 0 0;
+  font-size: 0.84rem;
+  color: rgba(147, 211, 255, 0.92);
+}
+
 .detail-panel {
   position: absolute;
   right: 1rem;

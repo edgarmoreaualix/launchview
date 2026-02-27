@@ -2,8 +2,13 @@ import { useEffect, useRef } from 'react';
 import { Ion, OpenStreetMapImageryProvider } from 'cesium';
 import type { Viewer as CesiumViewer } from 'cesium';
 import { type CesiumComponentRef, Viewer } from 'resium';
-import type { LaunchSummary } from '../../../shared/types';
+import type {
+  LaunchSummary,
+  LaunchTrajectory,
+  TrajectoryPoint,
+} from '../../../shared/types';
 import { LaunchPins } from './LaunchPins';
+import { TrajectoryTrail } from './TrajectoryTrail';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 const cesiumIonToken = import.meta.env.VITE_CESIUM_ION_TOKEN?.trim() ?? '';
@@ -16,9 +21,19 @@ interface GlobeProps {
   launches: LaunchSummary[];
   selectedLaunchId: string | null;
   onSelectLaunch: (launchId: string) => void;
+  trajectory: LaunchTrajectory | null;
+  trajectoryPoint: TrajectoryPoint | null;
+  trajectoryElapsedSeconds: number;
 }
 
-export function Globe({ launches, selectedLaunchId, onSelectLaunch }: GlobeProps) {
+export function Globe({
+  launches,
+  selectedLaunchId,
+  onSelectLaunch,
+  trajectory,
+  trajectoryPoint,
+  trajectoryElapsedSeconds,
+}: GlobeProps) {
   const viewerRef = useRef<CesiumComponentRef<CesiumViewer>>(null);
 
   useEffect(() => {
@@ -60,6 +75,11 @@ export function Globe({ launches, selectedLaunchId, onSelectLaunch }: GlobeProps
           launches={launches}
           selectedLaunchId={selectedLaunchId}
           onSelectLaunch={onSelectLaunch}
+        />
+        <TrajectoryTrail
+          trajectory={trajectory}
+          activePoint={trajectoryPoint}
+          elapsedSeconds={trajectoryElapsedSeconds}
         />
       </Viewer>
     </div>
