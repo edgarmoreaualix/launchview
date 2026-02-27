@@ -2,6 +2,7 @@ import "../setup";
 import { describe, expect, test } from "vitest";
 
 import type { LaunchSummary } from "../../shared/types";
+import { isNullableString } from "./helpers/typeGuards";
 
 const REQUIRED_KEYS: Array<keyof LaunchSummary> = [
   "id",
@@ -25,10 +26,6 @@ const REQUIRED_KEYS: Array<keyof LaunchSummary> = [
   "webcastLive",
   "imageUrl",
 ];
-
-function isNullableString(value: unknown): value is string | null {
-  return value === null || typeof value === "string";
-}
 
 function validateLaunchSummaryContract(value: unknown): { valid: boolean; errors: string[] } {
   const errors: string[] = [];

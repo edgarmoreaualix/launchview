@@ -4,6 +4,7 @@ import { describe, expect, test } from "vitest";
 
 import type { LaunchSummary } from "../../shared/types";
 import { parseIsoTimestamp } from "../../frontend/src/utils/time";
+import { isNullableString } from "./helpers/typeGuards";
 import {
   launchDetailFixture,
   malformedNetLaunchDetailFixture,
@@ -19,10 +20,6 @@ const REQUIRED_DETAIL_FIELDS: Array<keyof LaunchSummary> = [
   "padName",
   "locationName",
 ];
-
-function isNullableString(value: unknown): value is string | null {
-  return value === null || typeof value === "string";
-}
 
 function validateDetailPanelContract(value: unknown): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
