@@ -40,6 +40,13 @@ function getTrajectoryStatusMessage(status: 'idle' | 'invalid' | 'ready'): strin
 function App() {
   const { data, isLoading, error } = useLaunches();
   const [selectedLaunchId, setSelectedLaunchId] = useState<string | null>(null);
+  const [isMobileInfoVisible, setIsMobileInfoVisible] = useState<boolean>(() => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+
+    return window.innerWidth > 760;
+  });
 
   const selectedLaunch = useMemo(() => {
     if (!selectedLaunchId) {
@@ -79,6 +86,27 @@ function App() {
     }
   }, [data, selectedLaunchId]);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 760px)');
+
+    const applyViewportBehavior = (isMobile: boolean) => {
+      setIsMobileInfoVisible(!isMobile);
+    };
+
+    applyViewportBehavior(mediaQuery.matches);
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      applyViewportBehavior(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, []);
+
+  const panelVisibilityClass = isMobileInfoVisible ? 'panels-visible' : 'panels-hidden';
+
   return (
     <main className="app-root">
       <Globe
@@ -89,7 +117,22 @@ function App() {
         trajectoryPoint={trajectoryPoint}
         trajectoryElapsedSeconds={trajectoryElapsedSeconds}
       />
-      <section className="status-panel" aria-live="polite">
+      <button
+        type="button"
+        className="mobile-info-toggle"
+        onClick={() => {
+          setIsMobileInfoVisible((previous) => !previous);
+        }}
+        aria-expanded={isMobileInfoVisible}
+        aria-controls="launchview-status-panel launchview-detail-panel"
+      >
+        {isMobileInfoVisible ? 'Hide info' : 'Show info'}
+      </button>
+      <section
+        id="launchview-status-panel"
+        className={`status-panel ${panelVisibilityClass}`}
+        aria-live="polite"
+      >
         <h1 className="status-title">Launchview</h1>
         <p className={`status-copy status-${launchesStatus.tone}`}>
           {launchesStatus.text}
@@ -98,19 +141,21 @@ function App() {
           <p className="trajectory-status">{getTrajectoryStatusMessage(trajectoryStatus)}</p>
         ) : null}
       </section>
-      <LaunchDetailPanel
-        selectedLaunch={selectedLaunch}
-        isLoading={isLoading}
-        error={error}
-        isEmpty={!isLoading && !error && data.length === 0}
-        watchingCount={watchingCount}
-        watchingLoading={watchingLoading}
-        watchingError={watchingError}
-        isJoiningWatching={isJoiningWatching}
-        onJoinWatching={() => {
-          void joinWatching();
-        }}
-      />
+      <div id="launchview-detail-panel" className={`detail-panel-shell ${panelVisibilityClass}`}>
+        <LaunchDetailPanel
+          selectedLaunch={selectedLaunch}
+          isLoading={isLoading}
+          error={error}
+          isEmpty={!isLoading && !error && data.length === 0}
+          watchingCount={watchingCount}
+          watchingLoading={watchingLoading}
+          watchingError={watchingError}
+          isJoiningWatching={isJoiningWatching}
+          onJoinWatching={() => {
+            void joinWatching();
+          }}
+        />
+      </div>
     </main>
   );
 }

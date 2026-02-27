@@ -100,6 +100,13 @@ body,
   color: rgba(147, 211, 255, 0.92);
 }
 
+.detail-panel-shell {
+  position: absolute;
+  right: 1.1rem;
+  bottom: 1.1rem;
+  z-index: 10;
+}
+
 .detail-panel {
   position: absolute;
   right: 1.1rem;
@@ -217,12 +224,58 @@ body,
   cursor: progress;
 }
 
+.mobile-info-toggle {
+  display: none;
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  z-index: 20;
+  appearance: none;
+  border: 1px solid rgba(99, 208, 255, 0.55);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(27, 109, 164, 0.95), rgba(12, 62, 96, 0.95));
+  color: #eaf7ff;
+  padding: 0.42rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.mobile-info-toggle:focus-visible {
+  outline: 2px solid #83d5ff;
+  outline-offset: 2px;
+}
+
 @media (max-width: 760px) {
+  .mobile-info-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .status-panel.panels-hidden,
+  .detail-panel-shell.panels-hidden {
+    display: none;
+  }
+
+  .status-panel.panels-visible,
+  .detail-panel-shell.panels-visible {
+    display: block;
+  }
+
   .status-panel {
     left: 0.7rem;
     top: 0.7rem;
     max-width: calc(100vw - 1.4rem);
     padding: 0.8rem 0.9rem;
+  }
+
+  .detail-panel-shell {
+    left: 0.7rem;
+    right: 0.7rem;
+    bottom: 0.7rem;
+    max-width: none;
   }
 
   .detail-panel {
