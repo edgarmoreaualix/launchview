@@ -1,88 +1,83 @@
-# Agentic Starter
+# LaunchView
 
-Reusable starter repo for multi-agent development teams. File-based orchestration, clear boundaries, high commit velocity.
+LaunchView is a 3D rocket launch visualizer built with React + Cesium.
+It lets you explore upcoming launches on a globe, follow animated flight paths, and inspect mission details in a fast, interactive interface.
 
-## The Team
+## Live Project
 
-| Role | Slug | Persona | Focus |
-|------|------|---------|-------|
-| Orchestrator | `orchestrator` | The Architect | Plans, decomposes, reviews, merges |
-| Backend | `worker-backend` | The Foundation | APIs, data, business logic |
-| Frontend | `worker-frontend` | The Interface | UI, components, client state |
-| QA | `worker-qa` | The Gatekeeper | Tests, validation, regression prevention |
-| Sentinel | `worker-sentinel` | The Guardian | Cleanup, security, simplification |
+- Production: `https://launchview-20260227.netlify.app`
 
-## Structure
+## What It Does
+
+- Plots upcoming launch pads on a 3D Earth view
+- Animates a launch trajectory from pad to flight arc
+- Renders a rocket directly on the flight path (with fallback geometry)
+- Shows mission details: status, NET, pad, rocket family, mission summary
+- Runs a real-time countdown for the selected launch
+- Includes a "watching now" counter with join action
+- Supports mobile-first usage with an information panel toggle
+
+## Visual Experience
+
+- Global exploration view for all launch sites
+- Automatic camera transition to the selected launch area
+- In-flight trajectory marker and trail for motion clarity
+- Atmospheric satellite imagery with fallback providers
+
+## Tech Stack
+
+- Frontend: React, TypeScript, Vite, Cesium, Resium
+- Backend: Netlify Functions (TypeScript)
+- Testing: Vitest
+- Deployment: Netlify
+
+## Project Structure
 
 ```text
-.
-├── MULTI_AGENT_PLAYBOOK.md      # Team rules and workflow
-├── backend/                      # Backend (worker-backend owns)
-├── frontend/                     # Frontend (worker-frontend owns)
-├── shared/                       # Contracts (orchestrator approval required)
-├── data/                         # Fixtures, mocks, datasets
-├── docs/                         # Specs, architecture, checklists
-└── ops/
-    ├── personas/                 # Agent system prompts
-    ├── templates/                # Kickoff and review templates
-    ├── config/                   # Worker configuration
-    ├── runtime/                  # tmux pane mapping
-    ├── bin/                      # loop.sh, watch-loop.sh
-    └── loops/                    # Loop artifacts (prompts, summaries, merges)
+frontend/   React + Cesium client
+backend/    Netlify serverless API functions
+shared/     Shared TypeScript contracts
+data/       Mock launch data used by the API
+tests/      Unit and contract tests
 ```
 
-## Quickstart
+## API Endpoints
+
+- `GET /api/launches`
+  - Returns normalized launch summaries for the globe and details panel
+- `GET /api/watching?launchId=<id>`
+  - Returns current watching count for one launch
+- `POST /api/watching`
+  - Body: `{ "launchId": "...", "delta": 1 }`
+  - Increments watching count
+
+## Run Locally
 
 ```bash
-# 1. Configure workers
-cp ops/config/workers.env.example ops/config/workers.env
-
-# 2. Configure tmux panes (optional, for automation)
-cp ops/runtime/tmux.env.example ops/runtime/tmux.env
-
-# 3. Start a loop
-make loop-start N=1
-
-# 4. Orchestrator writes prompts, then:
-make watch-run N=1        # Auto-dispatches workers via tmux
-
-# 5. Check status
-make loop-check N=1
-
-# 6. Assemble summaries for review
-make loop-assemble N=1
+npm install
+npm run verify
+netlify dev
 ```
 
-## Loop Types
+Then open `http://127.0.0.1:8888`.
 
-| Type | When | Commit Target |
-|------|------|---------------|
-| **Build** | Feature/fix work | 12-20 per loop |
-| **Sentinel** | Every 3-4 build loops | 15-30 per loop |
-| **Hybrid** | Build + adjacent cleanup | 15-25 per loop |
+## Build and Quality
 
-## Daily Workflow
+```bash
+npm run verify
+```
 
-1. `make loop-start N=1` — create loop skeleton
-2. Orchestrator declares loop type and writes worker prompts
-3. `make watch-run N=1` — auto-dispatch workers when prompts are ready
-4. Workers execute, commit granularly, write summaries
-5. Watch auto-assembles and notifies orchestrator when summaries are done
-6. Orchestrator writes merge plan
-7. Human executes merges with validation
-8. Repeat (Sentinel loop every 3-4 build loops)
+This runs:
 
-## Velocity Targets
+- backend typecheck
+- frontend production build
+- full test suite
 
-- **8-12 loops/day** at 15-30 minutes each
-- **12-20 commits per build loop** (3-5 per worker)
-- **100-200+ commits/day**
+## Deployment
 
-## Why This Works
+Production deploys to Netlify using `netlify.toml`.
 
-- Everything is auditable as plain files
-- No external services, no databases
-- Boundaries prevent merge conflicts
-- Sentinel loops prevent entropy accumulation
-- Granular commits = high throughput + easy rollback
-- Scripts are small and easy to modify
+```bash
+netlify deploy --prod
+```
+
