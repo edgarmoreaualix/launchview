@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 

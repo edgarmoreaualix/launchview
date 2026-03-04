@@ -9,9 +9,6 @@
   "author": "",
   "license": "ISC",
   "description": "",
-  "dependencies": {
-    "node-fetch": "^3.3.2"
-  },
   "devDependencies": {
     "@netlify/functions": "^5.1.2",
     "@types/node": "^25.3.2",
