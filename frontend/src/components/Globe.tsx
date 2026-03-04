@@ -12,13 +12,18 @@ import {
 import type { Viewer as CesiumViewer } from 'cesium';
 import { type CesiumComponentRef, Viewer } from 'resium';
 import type {
+  GroundTrackPoint,
   LaunchSummary,
   LaunchTrajectory,
+  SatellitePosition,
+  SatelliteSummary,
   TrajectoryPoint,
 } from '../../../shared/types';
 import { LaunchPins } from './LaunchPins';
 import { LaunchPadRocket } from './LaunchPadRocket';
 import { TrajectoryTrail } from './TrajectoryTrail';
+import { SatelliteMarkers } from './SatelliteMarkers';
+import { SatelliteGroundTrack } from './SatelliteGroundTrack';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 const cesiumIonToken = import.meta.env.VITE_CESIUM_ION_TOKEN?.trim() ?? '';
@@ -34,6 +39,14 @@ interface GlobeProps {
   trajectory: LaunchTrajectory | null;
   trajectoryPoint: TrajectoryPoint | null;
   trajectoryElapsedSeconds: number;
+  showLaunches: boolean;
+  satellites: SatelliteSummary[];
+  satellitePositions: Map<number, SatellitePosition>;
+  selectedSatelliteId: number | null;
+  onSelectSatellite: (noradId: number) => void;
+  showSatellites: boolean;
+  groundTrackSegments: GroundTrackPoint[][];
+  selectedSatelliteNoradId: number | null;
 }
 
 export function Globe({
@@ -43,6 +56,14 @@ export function Globe({
   trajectory,
   trajectoryPoint,
   trajectoryElapsedSeconds,
+  showLaunches,
+  satellites,
+  satellitePositions,
+  selectedSatelliteId,
+  onSelectSatellite,
+  showSatellites,
+  groundTrackSegments,
+  selectedSatelliteNoradId,
 }: GlobeProps) {
   const viewerRef = useRef<CesiumComponentRef<CesiumViewer>>(null);
   const hasInitializedViewRef = useRef(false);
@@ -160,6 +181,27 @@ export function Globe({
     });
   }, [selectedLaunch]);
 
+  useEffect(() => {
+    const viewer = viewerRef.current?.cesiumElement;
+    if (!viewer || selectedSatelliteId === null) {
+      return;
+    }
+
+    const pos = satellitePositions.get(selectedSatelliteId);
+    if (!pos) {
+      return;
+    }
+
+    viewer.camera.flyTo({
+      destination: Cartesian3.fromDegrees(
+        pos.longitude,
+        pos.latitude,
+        pos.altitude * 1000 + 2_000_000,
+      ),
+      duration: 1.9,
+    });
+  }, [selectedSatelliteId, satellitePositions]);
+
   return (
     <div className="globe-shell" role="presentation" aria-hidden="true">
       <Viewer
@@ -177,21 +219,41 @@ export function Globe({
         selectionIndicator={false}
         baseLayer={false}
       >
-        <LaunchPins
-          launches={launches}
-          selectedLaunchId={selectedLaunchId}
-          onSelectLaunch={onSelectLaunch}
-        />
-        <TrajectoryTrail
-          trajectory={trajectory}
-          activePoint={trajectoryPoint}
-          elapsedSeconds={trajectoryElapsedSeconds}
-        />
-        <LaunchPadRocket
-          selectedLaunch={selectedLaunch}
-          trajectory={trajectory}
-          activePoint={trajectoryPoint}
-        />
+        {showLaunches ? (
+          <>
+            <LaunchPins
+              launches={launches}
+              selectedLaunchId={selectedLaunchId}
+              onSelectLaunch={onSelectLaunch}
+            />
+            <TrajectoryTrail
+              trajectory={trajectory}
+              activePoint={trajectoryPoint}
+              elapsedSeconds={trajectoryElapsedSeconds}
+            />
+            <LaunchPadRocket
+              selectedLaunch={selectedLaunch}
+              trajectory={trajectory}
+              activePoint={trajectoryPoint}
+            />
+          </>
+        ) : null}
+        {showSatellites ? (
+          <>
+            <SatelliteMarkers
+              satellites={satellites}
+              positions={satellitePositions}
+              selectedSatelliteId={selectedSatelliteId}
+              onSelectSatellite={onSelectSatellite}
+            />
+            {selectedSatelliteNoradId !== null && groundTrackSegments.length > 0 ? (
+              <SatelliteGroundTrack
+                segments={groundTrackSegments}
+                noradId={selectedSatelliteNoradId}
+              />
+            ) : null}
+          </>
+        ) : null}
       </Viewer>
     </div>
   );

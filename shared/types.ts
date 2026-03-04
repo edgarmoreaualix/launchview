@@ -77,3 +77,44 @@ export interface WatchingCount {
   launchId: string;
   count: number;
 }
+
+// Satellites
+export type SatelliteCategory =
+  | "station"
+  | "telescope"
+  | "science"
+  | "earth-observation"
+  | "navigation"
+  | "communications"
+  | "weather"
+  | "reconnaissance";
+
+export interface SatelliteTLE {
+  line1: string;
+  line2: string;
+}
+
+export interface SatelliteSummary {
+  noradId: number;
+  name: string;
+  category: SatelliteCategory;
+  country: string;
+  tle: SatelliteTLE;
+  inclination: number;
+  period: number;
+  apogee: number;
+  perigee: number;
+}
+
+export interface SatellitePosition {
+  noradId: number;
+  latitude: number;
+  longitude: number;
+  altitude: number;
+  velocity: number;
+}
+
+export interface GroundTrackPoint {
+  latitude: number;
+  longitude: number;
+}

@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Globe } from './components/Globe';
 import { LaunchDetailPanel } from './components/LaunchDetailPanel';
+import { SatelliteDetailPanel } from './components/SatelliteDetailPanel';
+import { LayerToggle } from './components/LayerToggle';
 import { useLaunches } from './hooks/useLaunches';
 import { useTrajectory } from './hooks/useTrajectory';
 import { useWatchingCounter } from './hooks/useWatchingCounter';
+import { useSatellites } from './hooks/useSatellites';
+import { useGroundTrack } from './hooks/useGroundTrack';
 
 function getLaunchesStatusMessage(
   isLoading: boolean,
@@ -40,6 +44,9 @@ function getTrajectoryStatusMessage(status: 'idle' | 'invalid' | 'ready'): strin
 function App() {
   const { data, isLoading, error } = useLaunches();
   const [selectedLaunchId, setSelectedLaunchId] = useState<string | null>(null);
+  const [selectedSatelliteId, setSelectedSatelliteId] = useState<number | null>(null);
+  const [showLaunches, setShowLaunches] = useState(true);
+  const [showSatellites, setShowSatellites] = useState(true);
   const [isMobileInfoVisible, setIsMobileInfoVisible] = useState<boolean>(() => {
     if (typeof window === 'undefined') {
       return true;
@@ -55,6 +62,30 @@ function App() {
 
     return data.find((launch) => launch.id === selectedLaunchId) ?? null;
   }, [data, selectedLaunchId]);
+
+  const {
+    satellites,
+    positions: satellitePositions,
+  } = useSatellites(showSatellites);
+
+  const selectedSatellite = useMemo(() => {
+    if (selectedSatelliteId === null) {
+      return null;
+    }
+    return satellites.find((s) => s.noradId === selectedSatelliteId) ?? null;
+  }, [satellites, selectedSatelliteId]);
+
+  const groundTrackSegments = useGroundTrack(selectedSatellite);
+
+  const handleSelectLaunch = (launchId: string) => {
+    setSelectedLaunchId(launchId);
+    setSelectedSatelliteId(null);
+  };
+
+  const handleSelectSatellite = (noradId: number) => {
+    setSelectedSatelliteId(noradId);
+    setSelectedLaunchId(null);
+  };
   const {
     trajectory,
     activePoint: trajectoryPoint,
@@ -112,10 +143,18 @@ function App() {
       <Globe
         launches={data}
         selectedLaunchId={selectedLaunchId}
-        onSelectLaunch={setSelectedLaunchId}
+        onSelectLaunch={handleSelectLaunch}
         trajectory={trajectory}
         trajectoryPoint={trajectoryPoint}
         trajectoryElapsedSeconds={trajectoryElapsedSeconds}
+        showLaunches={showLaunches}
+        satellites={satellites}
+        satellitePositions={satellitePositions}
+        selectedSatelliteId={selectedSatelliteId}
+        onSelectSatellite={handleSelectSatellite}
+        showSatellites={showSatellites}
+        groundTrackSegments={groundTrackSegments}
+        selectedSatelliteNoradId={selectedSatelliteId}
       />
       <button
         type="button"
@@ -140,21 +179,34 @@ function App() {
         {!isLoading && !error && data.length > 0 ? (
           <p className="trajectory-status">{getTrajectoryStatusMessage(trajectoryStatus)}</p>
         ) : null}
+        <LayerToggle
+          showLaunches={showLaunches}
+          showSatellites={showSatellites}
+          onToggleLaunches={() => { setShowLaunches((prev) => !prev); }}
+          onToggleSatellites={() => { setShowSatellites((prev) => !prev); }}
+        />
       </section>
       <div id="launchview-detail-panel" className={`detail-panel-shell ${panelVisibilityClass}`}>
-        <LaunchDetailPanel
-          selectedLaunch={selectedLaunch}
-          isLoading={isLoading}
-          error={error}
-          isEmpty={!isLoading && !error && data.length === 0}
-          watchingCount={watchingCount}
-          watchingLoading={watchingLoading}
-          watchingError={watchingError}
-          isJoiningWatching={isJoiningWatching}
-          onJoinWatching={() => {
-            void joinWatching();
-          }}
-        />
+        {selectedSatellite ? (
+          <SatelliteDetailPanel
+            satellite={selectedSatellite}
+            position={satellitePositions.get(selectedSatellite.noradId) ?? null}
+          />
+        ) : (
+          <LaunchDetailPanel
+            selectedLaunch={selectedLaunch}
+            isLoading={isLoading}
+            error={error}
+            isEmpty={!isLoading && !error && data.length === 0}
+            watchingCount={watchingCount}
+            watchingLoading={watchingLoading}
+            watchingError={watchingError}
+            isJoiningWatching={isJoiningWatching}
+            onJoinWatching={() => {
+              void joinWatching();
+            }}
+          />
+        )}
       </div>
     </main>
   );

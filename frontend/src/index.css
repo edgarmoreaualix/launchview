@@ -224,6 +224,51 @@ body,
   cursor: progress;
 }
 
+.layer-toggle {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.layer-button {
+  appearance: none;
+  border: 1px solid rgba(99, 208, 255, 0.35);
+  border-radius: 0.45rem;
+  background: rgba(15, 45, 75, 0.55);
+  color: rgba(180, 215, 245, 0.8);
+  padding: 0.28rem 0.55rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.layer-button:hover {
+  background: rgba(25, 70, 110, 0.65);
+  color: #eaf7ff;
+}
+
+.layer-button:focus-visible {
+  outline: 2px solid #83d5ff;
+  outline-offset: 2px;
+}
+
+.layer-active {
+  background: linear-gradient(180deg, rgba(27, 109, 164, 0.95), rgba(12, 62, 96, 0.95));
+  border-color: rgba(99, 208, 255, 0.55);
+  color: #eaf7ff;
+}
+
+.satellite-category-badge {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(200, 138, 255, 0.9);
+}
+
 .mobile-info-toggle {
   display: none;
   position: absolute;
